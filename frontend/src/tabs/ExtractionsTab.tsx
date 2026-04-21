@@ -3,7 +3,7 @@ import { getExtractions } from '../api';
 import type { Extractions } from '../api';
 
 export function ExtractionsTab() {
-  const [data, setData] = useState<Extractions>({ entities: [], facts: [] });
+  const [data, setData] = useState<Extractions>({ entities: [], facts: [], documents: [] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
