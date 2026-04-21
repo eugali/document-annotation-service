@@ -35,31 +35,39 @@ model EntityType {
 model Entity {
   id           String           @id @default(uuid())
   entityTypeId String
-  entityType   EntityType       @relation(fields: [entityTypeId], references: [id])
+  entityType   EntityType       @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
   name         String
   createdAt    DateTime         @default(now())
   documents    DocumentEntity[]
+  sources      EntitySource[]
+  facts        FactEntity[]
 
+  @@unique([entityTypeId, name])
   @@index([entityTypeId])
 }
 
 model FactType {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String
-  prompt      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  facts       Fact[]
+  id             String   @id @default(uuid())
+  name           String   @unique
+  description    String
+  prompt         String
+  entityLinkHint String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  facts          Fact[]
 }
 
 model Fact {
-  id         String         @id @default(uuid())
-  factTypeId String
-  factType   FactType       @relation(fields: [factTypeId], references: [id])
-  value      String
-  createdAt  DateTime       @default(now())
-  documents  DocumentFact[]
+  id            String         @id @default(uuid())
+  factTypeId    String
+  factType      FactType       @relation(fields: [factTypeId], references: [id], onDelete: Cascade)
+  value         String
+  sourceSnippet String         @default("")
+  sourcePage    Int?
+  sourceCell    String?
+  createdAt     DateTime       @default(now())
+  documents     DocumentFact[]
+  entities      FactEntity[]
 
   @@index([factTypeId])
 }
@@ -88,4 +96,28 @@ model DocumentFact {
   @@unique([documentId, factId])
   @@index([documentId])
   @@index([factId])
+}
+
+model EntitySource {
+  id         String @id @default(uuid())
+  entityId   String
+  entity     Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  snippet    String
+  page       Int?
+  cell       String?
+  chunkIndex Int
+
+  @@index([entityId])
+}
+
+model FactEntity {
+  id       String @id @default(uuid())
+  factId   String
+  fact     Fact   @relation(fields: [factId], references: [id], onDelete: Cascade)
+  entityId String
+  entity   Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([factId, entityId])
+  @@index([factId])
+  @@index([entityId])
 }
