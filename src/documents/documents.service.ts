@@ -56,6 +56,21 @@ export class DocumentsService {
     return { id: document.id };
   }
 
+  async findAll() {
+    return this.prisma.document.findMany({
+      select: {
+        id: true,
+        filename: true,
+        mimeType: true,
+        status: true,
+        jobId: true,
+        error: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findById(id: string) {
     return this.prisma.document.findUnique({ where: { id } });
   }

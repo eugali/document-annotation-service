@@ -149,6 +149,50 @@ describe('DocumentsController', () => {
     });
   });
 
+  describe('GET /documents', () => {
+    it('returns empty array when no documents exist', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/documents')
+        .expect(200);
+
+      expect(response.body).toEqual([]);
+    });
+
+    it('returns all documents with id, filename, status, jobId, createdAt', async () => {
+      await prisma.document.create({
+        data: {
+          id: 'doc-list-1',
+          filename: 'test.pdf',
+          mimeType: 'application/pdf',
+          filePath: '/tmp/test.pdf',
+          status: 'done',
+          jobId: '10',
+        },
+      });
+      await prisma.document.create({
+        data: {
+          id: 'doc-list-2',
+          filename: 'test2.xlsx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          filePath: '/tmp/test2.xlsx',
+          status: 'pending',
+          jobId: '11',
+        },
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/documents')
+        .expect(200);
+
+      expect(response.body).toHaveLength(2);
+      expect(response.body[0]).toHaveProperty('id');
+      expect(response.body[0]).toHaveProperty('filename');
+      expect(response.body[0]).toHaveProperty('status');
+      expect(response.body[0]).toHaveProperty('jobId');
+      expect(response.body[0]).toHaveProperty('createdAt');
+    });
+  });
+
   describe('GET /documents/:id/annotations', () => {
     it('returns 200 with partial status, entities, facts, and error', async () => {
       // Seed entity type + fact type
