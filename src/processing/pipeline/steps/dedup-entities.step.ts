@@ -1,5 +1,9 @@
 import OpenAI from 'openai';
-import { ExtractedEntity, DedupedEntity } from '../pipeline.types';
+import {
+  ExtractedEntity,
+  DedupedEntity,
+  EntitySourceData,
+} from '../pipeline.types';
 import { withRetry } from '../../../shared/with-retry';
 
 const dedupJsonSchema = {
@@ -30,11 +34,31 @@ const dedupJsonSchema = {
   },
 } as const;
 
+function toEntitySource(e: ExtractedEntity): EntitySourceData {
+  return {
+    snippet: e.sourceSnippet,
+    page: e.sourcePage,
+    cell: e.sourceCell,
+    chunkIndex: e.chunkIndex,
+  };
+}
+
+function collectSources(
+  mergedFrom: string[],
+  typeName: string,
+  allEntities: ExtractedEntity[],
+): EntitySourceData[] {
+  return allEntities
+    .filter((e) => e.typeName === typeName && mergedFrom.includes(e.name))
+    .map(toEntitySource);
+}
+
 function toFallback(entities: ExtractedEntity[]): DedupedEntity[] {
   return entities.map((e) => ({
     typeName: e.typeName,
     name: e.name,
     mergedFrom: [e.name],
+    sources: [toEntitySource(e)],
   }));
 }
 
@@ -83,7 +107,16 @@ export async function deduplicateEntities(
     );
 
     const json = JSON.parse(response.choices[0].message.content as string);
-    return json.entities as DedupedEntity[];
+    const rawDeduped = json.entities as Array<{
+      typeName: string;
+      name: string;
+      mergedFrom: string[];
+    }>;
+
+    return rawDeduped.map((d) => ({
+      ...d,
+      sources: collectSources(d.mergedFrom, d.typeName, entities),
+    }));
   } catch {
     return toFallback(entities);
   }
