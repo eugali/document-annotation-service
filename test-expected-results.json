@@ -1,0 +1,65 @@
+{
+  "test-contract.pdf": {
+    "description": "Loan agreement between Global Finance Ltd and Marco Rossi",
+    "mimeType": "application/pdf",
+    "entities": {
+      "person": ["Marco Rossi", "Elena Bianchi"],
+      "organization": ["Global Finance Ltd", "Northern Trust Bank"],
+      "location": ["London, United Kingdom", "Milan, Italy"]
+    },
+    "facts": {
+      "monetary_amount": ["250000 EUR", "5000 EUR"],
+      "date_reference": ["2025-03-15", "2030-03-15"],
+      "percentage": ["4.5% per annum"],
+      "contractual_term": [
+        "Payment due within 30 days of each quarter end",
+        "Early termination requires 90 days written notice"
+      ]
+    }
+  },
+  "test-report.pdf": {
+    "description": "Annual financial report for TechVentures Inc FY 2025",
+    "mimeType": "application/pdf",
+    "entities": {
+      "person": ["Sarah Chen", "David Müller"],
+      "organization": ["TechVentures Inc", "Apex Capital Partners"],
+      "location": ["San Francisco, California", "Berlin, Germany"]
+    },
+    "facts": {
+      "monetary_amount": ["1200000 USD", "350000 USD"],
+      "date_reference": ["2025-01-01", "2025-12-31"],
+      "percentage": ["18% year-over-year revenue growth", "12% operating margin"],
+      "contractual_term": []
+    }
+  },
+  "test-employees.xlsx": {
+    "description": "Employee roster with salary and location data",
+    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "entities": {
+      "person": ["John Williams", "Maria Garcia", "Kenji Tanaka"],
+      "organization": ["Acme Corporation", "Pacific Dynamics"],
+      "location": ["New York, USA", "Madrid, Spain", "Tokyo, Japan"]
+    },
+    "facts": {
+      "monetary_amount": ["85000 USD", "92000 USD", "78000 USD"],
+      "date_reference": ["2023-06-01", "2022-01-15", "2024-03-10"],
+      "percentage": ["3% annual raise"],
+      "contractual_term": []
+    }
+  },
+  "test-transactions.xlsx": {
+    "description": "Financial transactions ledger with international transfers",
+    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "entities": {
+      "person": ["Robert Taylor", "Aisha Patel"],
+      "organization": ["Summit Logistics", "Oceanic Trading Co", "First National Bank"],
+      "location": ["Singapore", "Mumbai, India", "Dubai, UAE"]
+    },
+    "facts": {
+      "monetary_amount": ["47500 USD", "120000 EUR", "89000 GBP"],
+      "date_reference": ["2025-02-28", "2025-03-15", "2025-04-01"],
+      "percentage": ["2.5% transaction fee"],
+      "contractual_term": []
+    }
+  }
+}
