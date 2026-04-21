@@ -26,6 +26,10 @@ describe('CatalogController', () => {
   });
 
   beforeEach(async () => {
+    await prisma.documentEntity.deleteMany();
+    await prisma.documentFact.deleteMany();
+    await prisma.entity.deleteMany();
+    await prisma.fact.deleteMany();
     await prisma.entityType.deleteMany();
     await prisma.factType.deleteMany();
 
