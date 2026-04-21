@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extraction Workflow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#1a1a2e;--canvas:#16162a;--surface:#222244;--surface-hi:#2a2a50;
+    --border:#333366;--border-hi:#4a4a88;
+    --text:#d0d0e8;--text-dim:#8888aa;--text-bright:#eeeeff;
+    --blue:#6c8cff;--blue-g:rgba(108,140,255,.18);
+    --green:#5ce0a0;--green-g:rgba(92,224,160,.15);
+    --orange:#ffb86c;--orange-g:rgba(255,184,108,.15);
+    --purple:#c084fc;--purple-g:rgba(192,132,252,.15);
+    --red:#ff6b81;--red-g:rgba(255,107,129,.15);
+    --cyan:#67e8f9;--cyan-g:rgba(103,232,249,.15);
+    --pink:#f9a8d4;--pink-g:rgba(249,168,212,.15);
+    --teal:#2dd4bf;--teal-g:rgba(45,212,191,.15);
+    --lime:#a3e635;--lime-g:rgba(163,230,53,.15);
+    --slate:#94a3b8;--slate-g:rgba(148,163,184,.12);
+    --dot:rgba(255,255,255,.04);
+  }
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    display:flex;flex-direction:column;overflow-x:hidden;
+  }
+
+  .topbar{
+    padding:12px 32px;display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid rgba(255,255,255,.05);
+    background:rgba(22,22,42,.8);backdrop-filter:blur(12px);
+    position:sticky;top:0;z-index:10;
+  }
+  .topbar-icon{
+    width:32px;height:32px;border-radius:8px;
+    background:linear-gradient(135deg,var(--blue),var(--purple));
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;color:#fff;font-weight:700;
+  }
+  .topbar h1{font-size:1rem;font-weight:600;color:var(--text-bright);letter-spacing:-.01em}
+  .topbar-sub{font-size:.7rem;color:var(--text-dim);margin-left:auto}
+
+  .canvas-wrap{
+    position:relative;overflow:auto;
+    background:radial-gradient(circle at 1px 1px,var(--dot) 1px,transparent 0);
+    background-size:24px 24px;background-color:var(--canvas);
+  }
+  .canvas{position:relative;width:2100px;height:400px;margin:16px auto}
+
+  .connections{position:absolute;inset:0;pointer-events:none}
+  .conn{
+    fill:none;stroke:var(--border);stroke-width:2;
+    stroke-dasharray:6 3;opacity:.5;transition:stroke .3s,opacity .3s;
+  }
+  .conn.lit{stroke:var(--blue);opacity:1;stroke-dasharray:none}
+  .fan-ghost{fill:none;stroke-width:1.5;opacity:0;stroke-dasharray:4 6}
+  @keyframes dashflow{to{stroke-dashoffset:-30}}
+  .fan-ghost.flowing{opacity:1;animation:dashflow 1.5s linear infinite}
+  .conn-dot{r:3;fill:var(--border);transition:fill .3s}
+  .conn-dot.lit{fill:var(--blue)}
+
+  /* zones */
+  .zone-rect{
+    fill:rgba(192,132,252,.025);stroke:rgba(192,132,252,.12);
+    stroke-width:1.5;stroke-dasharray:6 4;rx:16;
+  }
+  .zone-rect.lit{fill:rgba(192,132,252,.05);stroke:rgba(192,132,252,.3)}
+
+  .zone-label{
+    position:absolute;display:flex;flex-direction:column;
+    align-items:center;gap:2px;pointer-events:none;
+  }
+  .zone-tag{
+    font-size:.6rem;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;padding:3px 10px;border-radius:6px;
+  }
+  .zone-sub{font-size:.55rem;color:var(--text-dim);font-weight:500}
+
+  .mult-pill{
+    position:absolute;pointer-events:none;
+    font-size:.58rem;font-weight:700;letter-spacing:.04em;
+    color:var(--green);background:rgba(92,224,160,.1);
+    border:1px solid rgba(92,224,160,.2);
+    padding:2px 8px;border-radius:10px;white-space:nowrap;
+  }
+  .dedup-note{
+    position:absolute;pointer-events:none;
+    font-size:.52rem;font-weight:600;letter-spacing:.04em;
+    color:var(--orange);background:rgba(255,184,108,.08);
+    border:1px solid rgba(255,184,108,.18);
+    padding:2px 7px;border-radius:8px;white-space:nowrap;
+    text-transform:uppercase;
+  }
+
+  /* section zone (API / pipeline) */
+  .section-zone{
+    fill:none;stroke-width:1;stroke-dasharray:5 4;rx:14;
+  }
+
+  .node{
+    position:absolute;width:148px;background:var(--surface);
+    border:1.5px solid var(--border);border-radius:12px;cursor:pointer;
+    transition:all .25s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 2px 8px rgba(0,0,0,.3);user-select:none;z-index:3;
+  }
+  .node:hover{
+    border-color:var(--node-color);transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 0 1px var(--node-color);
+  }
+  .node.active{
+    border-color:var(--node-color);
+    box-shadow:0 0 24px var(--node-glow),0 0 0 1px var(--node-color),0 8px 24px rgba(0,0,0,.4);
+    transform:translateY(-2px);z-index:4;
+  }
+  .node::before{
+    content:'';position:absolute;top:0;left:0;bottom:0;width:4px;
+    background:var(--node-color);border-radius:12px 0 0 12px;
+    opacity:.5;transition:opacity .25s;
+  }
+  .node:hover::before,.node.active::before{opacity:1}
+
+  .node-ghost{
+    position:absolute;width:148px;height:72px;
+    border:1.5px solid var(--border);border-radius:12px;
+    background:var(--surface);pointer-events:none;
+  }
+
+  .node-inner{padding:12px 12px 10px 16px}
+  .node-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .node-icon{
+    width:28px;height:28px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+    background:var(--node-glow);
+    border:1px solid color-mix(in srgb,var(--node-color) 30%,transparent);
+  }
+  .node-title{font-size:.73rem;font-weight:600;color:var(--text-bright);line-height:1.2}
+  .node-meta{display:flex;align-items:center;gap:5px}
+  .node-badge{
+    font-size:.55rem;padding:1.5px 6px;border-radius:6px;
+    background:var(--node-glow);color:var(--node-color);
+    font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .node-step{font-size:.55rem;color:var(--text-dim);font-weight:500;margin-left:auto}
+
+  .port{
+    position:absolute;width:8px;height:8px;border-radius:50%;
+    background:var(--border);border:1.5px solid var(--canvas);
+    transition:background .25s,box-shadow .25s;
+  }
+  .port-in{left:-4px;top:50%;transform:translateY(-50%)}
+  .port-out{right:-4px;top:50%;transform:translateY(-50%)}
+  .node:hover .port,.node.active .port{
+    background:var(--node-color);box-shadow:0 0 6px var(--node-glow);
+  }
+
+  /* http method label */
+  .http-label{
+    position:absolute;pointer-events:none;
+    font-size:.52rem;font-weight:700;letter-spacing:.03em;
+    padding:2px 6px;border-radius:4px;white-space:nowrap;
+    font-family:'SF Mono',ui-monospace,Consolas,monospace;
+  }
+
+  /* modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(10,10,20,.45);
+    backdrop-filter:blur(3px);opacity:0;pointer-events:none;
+    transition:opacity .25s;z-index:20;
+  }
+  .modal-overlay.open{opacity:1;pointer-events:auto}
+  .modal{
+    position:fixed;z-index:30;width:300px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;opacity:0;pointer-events:none;
+    transform:scale(.95) translateY(6px);
+    transition:opacity .2s,transform .25s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 12px 40px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.03);
+  }
+  .modal.open{opacity:1;pointer-events:auto;transform:scale(1) translateY(0)}
+  .modal-head{
+    display:flex;align-items:center;gap:8px;
+    padding:12px 14px 10px;
+    border-bottom:1px solid rgba(255,255,255,.05);
+  }
+  .modal-icon{
+    width:28px;height:28px;border-radius:7px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+  }
+  .modal-title{font-size:.78rem;font-weight:600;color:var(--text-bright)}
+  .modal-badge{
+    font-size:.48rem;padding:1.5px 5px;border-radius:4px;
+    font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    margin-left:5px;vertical-align:middle;
+  }
+  .modal-close{
+    margin-left:auto;width:22px;height:22px;border-radius:6px;
+    border:1px solid var(--border);background:transparent;color:var(--text-dim);
+    cursor:pointer;font-size:11px;display:flex;align-items:center;
+    justify-content:center;transition:all .15s;flex-shrink:0;
+  }
+  .modal-close:hover{background:var(--surface-hi);color:var(--text-bright)}
+  .modal-body{padding:10px 14px 14px}
+  .modal-desc{font-size:.73rem;line-height:1.55;color:var(--text)}
+  .modal-endpoint{
+    margin-top:8px;font-size:.65rem;padding:4px 8px;border-radius:5px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border);
+    font-family:'SF Mono',ui-monospace,Consolas,monospace;
+    color:var(--cyan);display:inline-block;
+  }
+  .retry-pill{
+    display:inline-flex;align-items:center;gap:3px;
+    font-size:.52rem;padding:2px 6px;border-radius:4px;
+    background:var(--orange-g);color:var(--orange);font-weight:500;
+    margin-top:8px;
+  }
+
+  /* ═══ GUIDE SECTION ═══ */
+  .guide{
+    width:100%;overflow-x:scroll;overflow-y:hidden;
+    scrollbar-width:auto;scrollbar-color:var(--border) rgba(255,255,255,.03);
+    background:var(--canvas);
+    border-top:1px solid rgba(255,255,255,.05);
+    border-bottom:1px solid rgba(255,255,255,.05);
+  }
+  .guide::-webkit-scrollbar{height:10px}
+  .guide::-webkit-scrollbar-track{background:rgba(255,255,255,.03)}
+  .guide::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
+  .guide::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
+  .guide-inner{
+    display:flex;align-items:center;gap:14px;
+    padding:28px 40px 28px;
+    min-width:max-content;
+  }
+  .guide-header{
+    display:flex;align-items:center;gap:8px;
+    flex-shrink:0;padding-top:4px;margin-right:8px;
+  }
+  .guide-header h2{font-size:.9rem;font-weight:600;color:var(--text-bright);white-space:nowrap}
+  .guide-header span{
+    font-size:.55rem;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-dim);
+    background:rgba(255,255,255,.04);padding:3px 8px;border-radius:5px;
+    border:1px solid var(--border);white-space:nowrap;
+  }
+
+  .step-card{
+    width:280px;flex-shrink:0;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:16px 18px;
+    position:relative;display:flex;flex-direction:column;gap:10px;
+  }
+  .step-card::before{
+    content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
+    border-radius:10px 0 0 10px;background:var(--card-color);opacity:.4;
+  }
+  .step-top{display:flex;align-items:center;gap:8px}
+  .step-num-pill{
+    width:22px;height:22px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.6rem;font-weight:700;
+    border:1.5px solid var(--card-color);color:var(--card-color);
+  }
+  .step-card-title{font-size:.72rem;font-weight:600;color:var(--text-bright);line-height:1.25}
+
+  .step-code{
+    font-family:'SF Mono',ui-monospace,Consolas,monospace;
+    font-size:.65rem;line-height:1.65;color:var(--cyan);
+    background:rgba(0,0,0,.25);border-radius:6px;
+    padding:10px 12px;white-space:pre;overflow-x:auto;
+    border:1px solid rgba(255,255,255,.03);
+  }
+  .step-code .cm{color:var(--text-dim)}
+  .step-code .kw{color:var(--green)}
+  .step-code .str{color:var(--orange)}
+  .step-code .flag{color:var(--purple)}
+
+  .step-note{
+    font-size:.65rem;line-height:1.5;color:var(--text-dim);
+  }
+  .step-note code{
+    font-family:'SF Mono',ui-monospace,Consolas,monospace;
+    font-size:.58rem;color:var(--text);
+    background:rgba(255,255,255,.04);padding:1px 4px;border-radius:3px;
+  }
+
+  /* arrow between cards */
+  .step-arrow{
+    display:flex;align-items:center;flex-shrink:0;
+    color:var(--border);font-size:10px;user-select:none;
+    padding-top:14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">W</div>
+  <h1>Extraction Workflow</h1>
+  <div class="topbar-sub">document-annotation-service</div>
+</div>
+
+<div class="canvas-wrap">
+<div class="canvas" id="canvas">
+
+  <svg class="connections" viewBox="0 0 2100 400" id="svg">
+    <!-- section zones -->
+    <rect class="section-zone" x="28" y="132" width="186" height="136"
+          stroke="rgba(45,212,191,.15)" fill="rgba(45,212,191,.015)"/>
+    <rect class="zone-rect" id="zoneRect" x="668" y="14" width="318" height="372"/>
+    <rect class="section-zone" x="1720" y="132" width="360" height="136"
+          stroke="rgba(45,212,191,.15)" fill="rgba(45,212,191,.015)"/>
+
+    <!-- upload → parse -->
+    <path class="conn" data-from="upload" data-to="parse"
+          d="M186,200 C216,200 220,200 258,200"/>
+    <!-- parse → chunk -->
+    <path class="conn" data-from="parse" data-to="chunk"
+          d="M406,200 C442,200 442,200 478,200"/>
+    <!-- chunk → entities -->
+    <path class="conn" data-from="chunk" data-to="entities"
+          d="M626,200 C678,200 718,82 784,82"/>
+    <!-- chunk → facts -->
+    <path class="conn" data-from="chunk" data-to="facts"
+          d="M626,200 C678,200 718,318 784,318"/>
+    <!-- entities → collect -->
+    <path class="conn" data-from="entities" data-to="collect"
+          d="M932,82 C998,82 1034,200 1078,200"/>
+    <!-- facts → collect -->
+    <path class="conn" data-from="facts" data-to="collect"
+          d="M932,318 C998,318 1034,200 1078,200"/>
+    <!-- collect → dedup -->
+    <path class="conn" data-from="collect" data-to="dedup"
+          d="M1226,200 C1261,200 1261,200 1296,200"/>
+    <!-- dedup → persist -->
+    <path class="conn" data-from="dedup" data-to="persist"
+          d="M1444,200 C1479,200 1479,200 1514,200"/>
+    <!-- persist → poll -->
+    <path class="conn" data-from="persist" data-to="poll"
+          d="M1662,200 C1697,200 1697,200 1738,200"/>
+    <!-- poll → results -->
+    <path class="conn" data-from="poll" data-to="results"
+          d="M1886,200 C1916,200 1916,200 1938,200"/>
+
+    <!-- fan-out ghosts: chunk → entities -->
+    <path class="fan-ghost" data-fan="out" stroke="var(--purple)" style="opacity:.22"
+          d="M626,200 C673,198 713,96 784,96"/>
+    <path class="fan-ghost" data-fan="out" stroke="var(--purple)" style="opacity:.13"
+          d="M626,200 C668,196 708,110 784,110"/>
+    <path class="fan-ghost" data-fan="out" stroke="var(--purple)" style="opacity:.07"
+          d="M626,200 C663,194 703,124 784,124"/>
+    <!-- fan-out ghosts: chunk → facts -->
+    <path class="fan-ghost" data-fan="out" stroke="var(--pink)" style="opacity:.22"
+          d="M626,200 C673,202 713,304 784,304"/>
+    <path class="fan-ghost" data-fan="out" stroke="var(--pink)" style="opacity:.13"
+          d="M626,200 C668,204 708,290 784,290"/>
+    <path class="fan-ghost" data-fan="out" stroke="var(--pink)" style="opacity:.07"
+          d="M626,200 C663,206 703,276 784,276"/>
+    <!-- fan-in ghosts: entities → collect -->
+    <path class="fan-ghost" data-fan="in" stroke="var(--purple)" style="opacity:.22"
+          d="M932,96 C993,96 1038,198 1078,198"/>
+    <path class="fan-ghost" data-fan="in" stroke="var(--purple)" style="opacity:.13"
+          d="M932,110 C993,110 1038,196 1078,196"/>
+    <path class="fan-ghost" data-fan="in" stroke="var(--purple)" style="opacity:.07"
+          d="M932,124 C993,124 1038,194 1078,194"/>
+    <!-- fan-in ghosts: facts → collect -->
+    <path class="fan-ghost" data-fan="in" stroke="var(--pink)" style="opacity:.22"
+          d="M932,304 C993,304 1038,202 1078,202"/>
+    <path class="fan-ghost" data-fan="in" stroke="var(--pink)" style="opacity:.13"
+          d="M932,290 C993,290 1038,204 1078,204"/>
+    <path class="fan-ghost" data-fan="in" stroke="var(--pink)" style="opacity:.07"
+          d="M932,276 C993,276 1038,206 1078,206"/>
+
+    <!-- poll loop arrow -->
+    <path class="conn" data-from="poll" data-to="poll"
+          d="M1812,236 C1812,264 1812,264 1812,264 C1780,264 1780,264 1780,264 C1748,264 1748,236 1748,236"
+          style="stroke-dasharray:3 3;opacity:.35"/>
+    <text x="1780" y="278" text-anchor="middle"
+          style="font-size:9px;fill:var(--text-dim);font-family:Inter,sans-serif">poll</text>
+
+    <!-- port dots -->
+    <circle class="conn-dot" cx="186" cy="200" data-from="upload"/>
+    <circle class="conn-dot" cx="258" cy="200" data-from="parse"/>
+    <circle class="conn-dot" cx="406" cy="200" data-from="parse"/>
+    <circle class="conn-dot" cx="478" cy="200" data-from="chunk"/>
+    <circle class="conn-dot" cx="626" cy="200" data-from="chunk"/>
+    <circle class="conn-dot" cx="784" cy="82" data-from="entities"/>
+    <circle class="conn-dot" cx="784" cy="318" data-from="facts"/>
+    <circle class="conn-dot" cx="932" cy="82" data-from="entities"/>
+    <circle class="conn-dot" cx="932" cy="318" data-from="facts"/>
+    <circle class="conn-dot" cx="1078" cy="200" data-from="collect"/>
+    <circle class="conn-dot" cx="1226" cy="200" data-from="collect"/>
+    <circle class="conn-dot" cx="1296" cy="200" data-from="dedup"/>
+    <circle class="conn-dot" cx="1444" cy="200" data-from="dedup"/>
+    <circle class="conn-dot" cx="1514" cy="200" data-from="persist"/>
+    <circle class="conn-dot" cx="1662" cy="200" data-from="persist"/>
+    <circle class="conn-dot" cx="1738" cy="200" data-from="poll"/>
+    <circle class="conn-dot" cx="1886" cy="200" data-from="poll"/>
+    <circle class="conn-dot" cx="1938" cy="200" data-from="results"/>
+  </svg>
+
+  <!-- zone labels -->
+  <div class="zone-label" style="left:121px;top:134px;transform:translateX(-50%)">
+    <div class="zone-tag" style="color:var(--teal);background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.18)">API</div>
+  </div>
+  <div class="zone-label" style="left:825px;top:20px;transform:translateX(-50%)">
+    <div class="zone-tag" style="color:var(--purple);background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.2)">&#9889; N parallel tasks</div>
+    <div class="zone-sub">chunks &times; (entity types + fact types)</div>
+  </div>
+  <div class="zone-label" style="left:1900px;top:134px;transform:translateX(-50%)">
+    <div class="zone-tag" style="color:var(--teal);background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.18)">API</div>
+  </div>
+
+  <!-- multiplier pills -->
+  <div class="mult-pill" style="left:644px;top:120px">&times; N</div>
+  <div class="mult-pill" style="left:644px;top:252px">&times; N</div>
+
+  <!-- entities-only annotation -->
+  <div class="dedup-note" style="left:1312px;top:146px">entities only</div>
+
+  <!-- HTTP method labels -->
+  <div class="http-label" style="left:44px;top:146px;color:var(--green);background:rgba(92,224,160,.1);border:1px solid rgba(92,224,160,.18)">POST</div>
+  <div class="http-label" style="left:1752px;top:146px;color:var(--cyan);background:rgba(103,232,249,.1);border:1px solid rgba(103,232,249,.18)">GET</div>
+  <div class="http-label" style="left:1952px;top:146px;color:var(--cyan);background:rgba(103,232,249,.1);border:1px solid rgba(103,232,249,.18)">GET</div>
+
+  <!-- ghost (stacked) nodes -->
+  <div class="node-ghost" style="left:796px;top:54px;opacity:.18;z-index:1;border-color:rgba(192,132,252,.15)">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--purple);border-radius:12px 0 0 12px;opacity:.3"></div>
+  </div>
+  <div class="node-ghost" style="left:792px;top:50px;opacity:.30;z-index:2;border-color:rgba(192,132,252,.2)">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--purple);border-radius:12px 0 0 12px;opacity:.4"></div>
+  </div>
+  <div class="node-ghost" style="left:796px;top:290px;opacity:.18;z-index:1;border-color:rgba(249,168,212,.15)">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--pink);border-radius:12px 0 0 12px;opacity:.3"></div>
+  </div>
+  <div class="node-ghost" style="left:792px;top:286px;opacity:.30;z-index:2;border-color:rgba(249,168,212,.2)">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--pink);border-radius:12px 0 0 12px;opacity:.4"></div>
+  </div>
+
+  <!-- ═══ NODES ═══ -->
+
+  <!-- API: Upload -->
+  <div class="node" data-id="upload"
+       style="left:38px;top:164px;--node-color:var(--teal);--node-glow:var(--teal-g)">
+    <span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128228;</div>
+        <div class="node-title">Upload Document</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">api</span>
+        <span class="node-step">Client</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Parse -->
+  <div class="node" data-id="parse"
+       style="left:258px;top:164px;--node-color:var(--blue);--node-glow:var(--blue-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128196;</div>
+        <div class="node-title">Parse Document</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">entry</span>
+        <span class="node-step">Step 1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Chunk -->
+  <div class="node" data-id="chunk"
+       style="left:478px;top:164px;--node-color:var(--green);--node-glow:var(--green-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#9997;</div>
+        <div class="node-title">Chunk &amp; Fan-Out</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">split</span>
+        <span class="node-step">Step 2</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Entities -->
+  <div class="node" data-id="entities"
+       style="left:788px;top:46px;--node-color:var(--purple);--node-glow:var(--purple-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128100;</div>
+        <div class="node-title">Extract Entities</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">&#215; N parallel</span>
+        <span class="node-step">Step 3a</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Facts -->
+  <div class="node" data-id="facts"
+       style="left:788px;top:282px;--node-color:var(--pink);--node-glow:var(--pink-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128203;</div>
+        <div class="node-title">Extract Facts</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">&#215; N parallel</span>
+        <span class="node-step">Step 3b</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Collect -->
+  <div class="node" data-id="collect"
+       style="left:1078px;top:164px;--node-color:var(--cyan);--node-glow:var(--cyan-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128230;</div>
+        <div class="node-title">Collect Results</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">fan-in</span>
+        <span class="node-step">Step 4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Dedup -->
+  <div class="node" data-id="dedup"
+       style="left:1296px;top:164px;--node-color:var(--orange);--node-glow:var(--orange-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128279;</div>
+        <div class="node-title">Dedup Entities</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">entities only</span>
+        <span class="node-step">Step 5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline: Persist -->
+  <div class="node" data-id="persist"
+       style="left:1514px;top:164px;--node-color:var(--red);--node-glow:var(--red-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128190;</div>
+        <div class="node-title">Persist to DB</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">final</span>
+        <span class="node-step">Step 6</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- API: Poll Status -->
+  <div class="node" data-id="poll"
+       style="left:1738px;top:164px;--node-color:var(--teal);--node-glow:var(--teal-g)">
+    <span class="port port-in"></span><span class="port port-out"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#128260;</div>
+        <div class="node-title">Poll Status</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">api</span>
+        <span class="node-step">Client</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- API: Get Results -->
+  <div class="node" data-id="results"
+       style="left:1938px;top:164px;--node-color:var(--lime);--node-glow:var(--lime-g)">
+    <span class="port port-in"></span>
+    <div class="node-inner">
+      <div class="node-top">
+        <div class="node-icon">&#9989;</div>
+        <div class="node-title">Get Annotations</div>
+      </div>
+      <div class="node-meta">
+        <span class="node-badge">response</span>
+        <span class="node-step">Client</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══�� QUICKSTART GUIDE ═══ -->
+<div class="guide">
+  <div class="guide-inner">
+
+  <div class="guide-header">
+    <h2>Try it end-to-end</h2>
+    <span>quickstart</span>
+  </div>
+
+    <!-- 1 -->
+    <div class="step-card" style="--card-color:var(--slate)">
+      <div class="step-top">
+        <div class="step-num-pill">1</div>
+        <div class="step-card-title">Prerequisites</div>
+      </div>
+      <div class="step-code"><span class="cm"># Start Redis (required for job queue)</span>
+docker compose up -d</div>
+      <div class="step-note">Starts Redis on <code>localhost:6379</code>. Needs Docker and Node.js installed.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 2 -->
+    <div class="step-card" style="--card-color:var(--blue)">
+      <div class="step-top">
+        <div class="step-num-pill">2</div>
+        <div class="step-card-title">Install &amp; configure</div>
+      </div>
+      <div class="step-code">npm install
+cp .env.example .env
+<span class="cm"># edit .env → set OPENAI_API_KEY</span></div>
+      <div class="step-note"><code>REDIS_URL</code>, <code>DATABASE_URL</code>, <code>MAX_CONCURRENT_JOBS</code> have working defaults.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 3 -->
+    <div class="step-card" style="--card-color:var(--purple)">
+      <div class="step-top">
+        <div class="step-num-pill">3</div>
+        <div class="step-card-title">Init database</div>
+      </div>
+      <div class="step-code">npx prisma generate
+npx prisma migrate deploy</div>
+      <div class="step-note">Creates SQLite DB at <code>dev.db</code> and applies all migrations. Must run before first start.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 4 -->
+    <div class="step-card" style="--card-color:var(--orange)">
+      <div class="step-top">
+        <div class="step-num-pill">4</div>
+        <div class="step-card-title">Configure catalog</div>
+      </div>
+      <div class="step-code"><span class="cm"># edit to add/change types</span>
+prisma/seed/catalog.json</div>
+      <div class="step-note">Defines which entity types (person, organization, location) and fact types (monetary_amount, date_reference, percentage, contractual_term) to extract. Edit this file to customize. Auto-seeded into DB on server start.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 5 -->
+    <div class="step-card" style="--card-color:var(--green)">
+      <div class="step-top">
+        <div class="step-num-pill">5</div>
+        <div class="step-card-title">Start the server</div>
+      </div>
+      <div class="step-code">npm run start:dev</div>
+      <div class="step-note">Runs on <code>:3000</code>. On startup, reads <code>catalog.json</code> and upserts all entity &amp; fact types into the DB automatically.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 6 -->
+    <div class="step-card" style="--card-color:var(--teal)">
+      <div class="step-top">
+        <div class="step-num-pill">6</div>
+        <div class="step-card-title">Upload a document</div>
+      </div>
+      <div class="step-code"><span class="kw">curl</span> <span class="flag">-X POST</span> \
+  http://localhost:3000/documents \
+  <span class="flag">-F</span> <span class="str">"file=@doc.pdf"</span></div>
+      <div class="step-note">Returns <code>202</code> with <code>{ "id": "..." }</code>. Supports PDF, DOCX, XLSX, XLS, CSV.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 7 -->
+    <div class="step-card" style="--card-color:var(--cyan)">
+      <div class="step-top">
+        <div class="step-num-pill">7</div>
+        <div class="step-card-title">Poll for status</div>
+      </div>
+      <div class="step-code"><span class="kw">curl</span> http://localhost:3000\
+  /documents/<span class="str">{id}</span>/annotations</div>
+      <div class="step-note">Returns <code>202</code> while <code>pending</code> or <code>processing</code>. Poll every ~3s until status changes.</div>
+    </div>
+
+    <div class="step-arrow">&#x25B8;</div>
+
+    <!-- 8 -->
+    <div class="step-card" style="--card-color:var(--lime)">
+      <div class="step-top">
+        <div class="step-num-pill">8</div>
+        <div class="step-card-title">Get annotations</div>
+      </div>
+      <div class="step-code"><span class="cm"># same endpoint, once status=done</span>
+{ <span class="str">"status"</span>: <span class="str">"done"</span>,
+  <span class="str">"entities"</span>: { <span class="str">"person"</span>: [...] },
+  <span class="str">"facts"</span>: { <span class="str">"date"</span>: [...] } }</div>
+      <div class="step-note">Entities grouped by type. Facts grouped by type. <code>partial</code> if some chunks failed.</div>
+    </div>
+
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="overlay"></div>
+<div class="modal" id="modal">
+  <div class="modal-head" id="modalHead"></div>
+  <div class="modal-body" id="modalBody"></div>
+</div>
+
+<script>
+const data = {
+  upload: {
+    title:'Upload Document', icon:'&#128228;', badge:'api',
+    color:'var(--teal)', glow:'var(--teal-g)',
+    desc:'Client sends a file via multipart form-data. Supports PDF, DOCX, XLSX, XLS, and CSV. Returns a document ID immediately (202 Accepted) and enqueues the file for background processing.',
+    endpoint:'POST /documents',
+  },
+  parse: {
+    title:'Parse Document', icon:'&#128196;', badge:'entry',
+    color:'var(--blue)', glow:'var(--blue-g)',
+    desc:'Reads the uploaded file and extracts its raw text content. Supports PDF, Word, Excel, and CSV formats. Each format uses a dedicated parser to produce a clean text representation for downstream processing.',
+    retry:'2 retries',
+  },
+  chunk: {
+    title:'Chunk & Fan-Out', icon:'&#9997;', badge:'split',
+    color:'var(--green)', glow:'var(--green-g)',
+    desc:'Splits the document text into manageable chunks (~100k tokens each) and creates one parallel extraction task for every combination of chunk and configured type. This is where the pipeline scales — more content means more parallel workers.',
+  },
+  entities: {
+    title:'Extract Entities', icon:'&#128100;', badge:'&#215; N parallel',
+    color:'var(--purple)', glow:'var(--purple-g)',
+    desc:'Runs one LLM call per chunk to identify named entities (people, organizations, locations, etc.) using a strict JSON schema. Each chunk is processed independently and concurrently.',
+    retry:'3 retries · exponential',
+  },
+  facts: {
+    title:'Extract Facts', icon:'&#128203;', badge:'&#215; N parallel',
+    color:'var(--pink)', glow:'var(--pink-g)',
+    desc:'Runs one LLM call per chunk to extract factual statements (dates, amounts, clauses, key assertions) using a strict JSON schema. Runs fully in parallel alongside entity extraction.',
+    retry:'3 retries · exponential',
+  },
+  collect: {
+    title:'Collect Results', icon:'&#128230;', badge:'fan-in',
+    color:'var(--cyan)', glow:'var(--cyan-g)',
+    desc:'Waits for every parallel extraction task to finish, then merges all partial results into a single consolidated set of entities, facts, and any per-chunk errors. The pipeline only advances once all N tasks have reported back.',
+  },
+  dedup: {
+    title:'Dedup Entities', icon:'&#128279;', badge:'entities only',
+    color:'var(--orange)', glow:'var(--orange-g)',
+    desc:'Applies only to entities — facts pass through unchanged. Uses an LLM to detect and merge duplicate entities across chunks (e.g. "J. Doe" and "John Doe" become one record). Groups by entity type so different types are never merged together.',
+    retry:'3 retries · exponential',
+  },
+  persist: {
+    title:'Persist to DB', icon:'&#128190;', badge:'final',
+    color:'var(--red)', glow:'var(--red-g)',
+    desc:'Writes all deduplicated entities and extracted facts to the database in a single transaction, linking each to the source document. If any upstream step failed partially, the document is flagged accordingly.',
+    retry:'2 retries',
+  },
+  poll: {
+    title:'Poll Status', icon:'&#128260;', badge:'api',
+    color:'var(--teal)', glow:'var(--teal-g)',
+    desc:'Client polls the annotations endpoint until the document status transitions from "pending" or "processing" to "done", "partial", or "failed". Returns 202 while processing is in progress.',
+    endpoint:'GET /documents/{id}/annotations',
+  },
+  results: {
+    title:'Get Annotations', icon:'&#9989;', badge:'response',
+    color:'var(--lime)', glow:'var(--lime-g)',
+    desc:'Once processing is complete, the same endpoint returns the full output: entities grouped by type (person, org, location…) and facts grouped by type (dates, amounts, clauses…). Partial results are returned if some chunks failed.',
+    endpoint:'GET /documents/{id}/annotations',
+  },
+};
+
+const nodes = document.querySelectorAll('.node');
+const conns = document.querySelectorAll('.conn');
+const dots  = document.querySelectorAll('.conn-dot');
+const ghosts = document.querySelectorAll('.fan-ghost');
+const zoneRect = document.getElementById('zoneRect');
+const overlay = document.getElementById('overlay');
+const modal = document.getElementById('modal');
+const mHead = document.getElementById('modalHead');
+const mBody = document.getElementById('modalBody');
+let activeId = null;
+
+function openModal(id, nodeEl) {
+  if (activeId === id) { closeModal(); return; }
+  activeId = id;
+  nodes.forEach(n => n.classList.toggle('active', n.dataset.id === id));
+  conns.forEach(p => p.classList.toggle('lit', p.dataset.from === id || p.dataset.to === id));
+  dots.forEach(d => d.classList.toggle('lit', d.dataset.from === id));
+  const isParallel = ['chunk','entities','facts','collect'].includes(id);
+  ghosts.forEach(g => g.classList.toggle('flowing', isParallel));
+  zoneRect.classList.toggle('lit', isParallel);
+  renderModal(data[id]);
+  positionModal(nodeEl);
+  overlay.classList.add('open');
+  modal.classList.add('open');
+}
+
+function positionModal(nodeEl) {
+  const nr = nodeEl.getBoundingClientRect();
+  const mw = 300;
+  let left = nr.left + nr.width / 2 - mw / 2;
+  let top = nr.bottom + 12;
+  if (left < 12) left = 12;
+  if (left + mw > window.innerWidth - 12) left = window.innerWidth - mw - 12;
+  if (top + 240 > window.innerHeight) top = nr.top - 240;
+  modal.style.left = left + 'px';
+  modal.style.top = top + 'px';
+}
+
+function closeModal() {
+  activeId = null;
+  nodes.forEach(n => n.classList.remove('active'));
+  conns.forEach(p => p.classList.remove('lit'));
+  dots.forEach(d => d.classList.remove('lit'));
+  ghosts.forEach(g => g.classList.remove('flowing'));
+  zoneRect.classList.remove('lit');
+  overlay.classList.remove('open');
+  modal.classList.remove('open');
+}
+
+function renderModal(d) {
+  const retry = d.retry ? `<div class="retry-pill">&#8635; ${d.retry}</div>` : '';
+  const endpoint = d.endpoint ? `<div class="modal-endpoint">${d.endpoint}</div>` : '';
+  mHead.innerHTML = `
+    <div class="modal-icon" style="background:${d.glow};border:1px solid color-mix(in srgb,${d.color} 30%,transparent)">${d.icon}</div>
+    <div class="modal-title">${d.title}<span class="modal-badge" style="background:${d.glow};color:${d.color}">${d.badge}</span></div>
+    <button class="modal-close" id="modalClose">&times;</button>`;
+  mBody.innerHTML = `<div class="modal-desc">${d.desc}</div>${endpoint}${retry}`;
+  document.getElementById('modalClose').addEventListener('click', e => {
+    e.stopPropagation(); closeModal();
+  });
+}
+
+nodes.forEach(n => n.addEventListener('click', () => openModal(n.dataset.id, n)));
+overlay.addEventListener('click', closeModal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
