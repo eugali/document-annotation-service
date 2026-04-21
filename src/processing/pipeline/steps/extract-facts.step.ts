@@ -14,8 +14,11 @@ const factJsonSchema = {
           type: 'object',
           properties: {
             value: { type: 'string' },
+            sourceSnippet: { type: 'string' },
+            sourcePage: { type: ['integer', 'null'] },
+            sourceCell: { type: ['string', 'null'] },
           },
-          required: ['value'],
+          required: ['value', 'sourceSnippet', 'sourcePage', 'sourceCell'],
           additionalProperties: false,
         },
       },
@@ -40,6 +43,9 @@ RULES:
 - Only extract facts matching the type above
 - Each fact MUST have a non-empty "value" field
 - Do NOT invent facts not present in the text
+- For "sourceSnippet": copy the EXACT sentence(s) from the text where the fact appears. Do NOT paraphrase.
+- For "sourcePage": set the page number if identifiable from the text, otherwise null
+- For "sourceCell": set the cell reference if this is spreadsheet data, otherwise null
 
 Text:
 ${chunkText}`;
@@ -55,9 +61,20 @@ ${chunkText}`;
   );
 
   const json = JSON.parse(response.choices[0].message.content as string);
-  const rawFacts: { value: string }[] = json.facts || [];
+  const rawFacts: {
+    value: string;
+    sourceSnippet?: string;
+    sourcePage?: number | null;
+    sourceCell?: string | null;
+  }[] = json.facts || [];
 
   return rawFacts
     .filter((f) => f.value !== undefined && f.value !== '')
-    .map((f) => ({ typeName: factType.name, value: f.value }));
+    .map((f) => ({
+      typeName: factType.name,
+      value: f.value,
+      sourceSnippet: f.sourceSnippet || '',
+      sourcePage: f.sourcePage ?? undefined,
+      sourceCell: f.sourceCell ?? undefined,
+    }));
 }
