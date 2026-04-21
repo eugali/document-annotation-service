@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  filename  String
+  mimeType  String
+  filePath  String
+  status    String   @default("pending") // pending | processing | done | failed
+  error     String?
+  jobId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entities  DocumentEntity[]
+  facts     DocumentFact[]
+
+  @@index([status])
+}
+
+model EntityType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  prompt      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  entities    Entity[]
+}
+
+model Entity {
+  id           String           @id @default(uuid())
+  entityTypeId String
+  entityType   EntityType       @relation(fields: [entityTypeId], references: [id])
+  name         String
+  createdAt    DateTime         @default(now())
+  documents    DocumentEntity[]
+
+  @@index([entityTypeId])
+}
+
+model FactType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  prompt      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  facts       Fact[]
+}
+
+model Fact {
+  id         String         @id @default(uuid())
+  factTypeId String
+  factType   FactType       @relation(fields: [factTypeId], references: [id])
+  value      String
+  createdAt  DateTime       @default(now())
+  documents  DocumentFact[]
+
+  @@index([factTypeId])
+}
+
+model DocumentEntity {
+  id         String   @id @default(uuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  entityId   String
+  entity     Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([documentId, entityId])
+  @@index([documentId])
+  @@index([entityId])
+}
+
+model DocumentFact {
+  id         String   @id @default(uuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  factId     String
+  fact       Fact     @relation(fields: [factId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([documentId, factId])
+  @@index([documentId])
+  @@index([factId])
+}
