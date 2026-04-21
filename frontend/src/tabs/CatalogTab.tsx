@@ -43,21 +43,31 @@ export function CatalogTab() {
 
   function renderCard(kind: 'entity' | 'fact', item: CatalogType, list: CatalogType[], setList: (v: CatalogType[]) => void) {
     return (
-      <div className="card" key={item.id}>
-        <h3>{item.name}</h3>
-        <label>Description</label>
-        <textarea
-          value={item.description}
-          onChange={(e) => handleChange(list, setList, item.id, 'description', e.target.value)}
-        />
-        <label>Prompt</label>
-        <textarea
-          value={item.prompt}
-          onChange={(e) => handleChange(list, setList, item.id, 'prompt', e.target.value)}
-        />
-        <div style={{ marginTop: 8 }}>
-          <button className="btn" onClick={() => handleSave(kind, item)}>Save</button>
-          {saved === item.id && <span className="save-msg">Saved</span>}
+      <div className="catalog-card" key={item.id}>
+        <div className="catalog-card-header">
+          <span className="catalog-card-name">{item.name}</span>
+          <div className="catalog-card-actions">
+            {saved === item.id && <span className="save-msg">Saved</span>}
+            <button className="btn btn-sm" onClick={() => handleSave(kind, item)}>Save</button>
+          </div>
+        </div>
+        <div className="catalog-card-fields">
+          <div className="catalog-field">
+            <label>Description</label>
+            <textarea
+              rows={2}
+              value={item.description}
+              onChange={(e) => handleChange(list, setList, item.id, 'description', e.target.value)}
+            />
+          </div>
+          <div className="catalog-field">
+            <label>Prompt</label>
+            <textarea
+              rows={2}
+              value={item.prompt}
+              onChange={(e) => handleChange(list, setList, item.id, 'prompt', e.target.value)}
+            />
+          </div>
         </div>
       </div>
     );
@@ -67,10 +77,22 @@ export function CatalogTab() {
     <div>
       <h2>Extraction Catalog</h2>
       {error && <p className="error">{error}</p>}
-      <h3 className="group-header">Entity Types</h3>
-      {entityTypes.map((t) => renderCard('entity', t, entityTypes, setEntityTypes))}
-      <h3 className="group-header">Fact Types</h3>
-      {factTypes.map((t) => renderCard('fact', t, factTypes, setFactTypes))}
+
+      <div className="extraction-section extraction-section--entities">
+        <div className="extraction-section-header">
+          <span className="annotation-badge annotation-badge--entity">E</span>
+          Entity Types
+        </div>
+        {entityTypes.map((t) => renderCard('entity', t, entityTypes, setEntityTypes))}
+      </div>
+
+      <div className="extraction-section extraction-section--facts">
+        <div className="extraction-section-header">
+          <span className="annotation-badge annotation-badge--fact">F</span>
+          Fact Types
+        </div>
+        {factTypes.map((t) => renderCard('fact', t, factTypes, setFactTypes))}
+      </div>
     </div>
   );
 }

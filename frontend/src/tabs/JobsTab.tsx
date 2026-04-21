@@ -6,6 +6,7 @@ export function JobsTab() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState<string | null>(null);
+  const [loadingAll, setLoadingAll] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -16,6 +17,24 @@ export function JobsTab() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const hasPending = jobs.some(j =>
+      j.state === 'active' || j.state === 'waiting' || j.state === 'delayed'
+    );
+    if (!hasPending) return;
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
+  }, [jobs, load]);
+
+  async function handleRefreshAll() {
+    setLoadingAll(true);
+    try {
+      await load();
+    } finally {
+      setLoadingAll(false);
+    }
+  }
 
   async function handleRefresh(jobId: string) {
     setRefreshing(jobId);
@@ -36,8 +55,12 @@ export function JobsTab() {
 
   return (
     <div>
-      <h2>Jobs</h2>
-      <button className="btn" onClick={load} style={{ marginBottom: 12 }}>Refresh All</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 0 }}>Jobs</h2>
+        <button className="btn btn-sm" onClick={handleRefreshAll} disabled={loadingAll}>
+          {loadingAll ? '...' : '\u21BB'}
+        </button>
+      </div>
       {error && <p className="error">{error}</p>}
       <table>
         <thead>
