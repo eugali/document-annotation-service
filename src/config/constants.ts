@@ -9,9 +9,16 @@ export const SUPPORTED_MIME_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/csv',
 ] as const;
 
-export const SUPPORTED_EXTENSIONS = ['.pdf', '.xlsx', '.xls'] as const;
+export const SUPPORTED_EXTENSIONS = [
+  '.pdf',
+  '.xlsx',
+  '.xls',
+  '.docx',
+  '.csv',
+] as const;
 
-export const WEBHOOK_TIMEOUT_MS = 5000;
-export const WEBHOOK_MAX_RETRIES = 1;
+export const CHUNK_TARGET_TOKENS = 100_000;

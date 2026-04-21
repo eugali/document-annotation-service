@@ -1,0 +1,41 @@
+{
+  "entities": [
+    {
+      "name": "person",
+      "description": "A named individual mentioned in the document.",
+      "prompt": "Extract full names of individuals. Do not extract pronouns, generic references like 'the manager', or partial names. Each person must be a distinct named individual."
+    },
+    {
+      "name": "organization",
+      "description": "A company, institution, or named group.",
+      "prompt": "Extract names of companies, institutions, government bodies, NGOs, or named groups. Must be a specific named entity, not a generic category like 'the company' or 'the bank'."
+    },
+    {
+      "name": "location",
+      "description": "A geographic reference mentioned in the document.",
+      "prompt": "Extract physical addresses, cities, countries, or specific geographic references. Must be a named place, not relative references like 'nearby' or 'the office'."
+    }
+  ],
+  "facts": [
+    {
+      "name": "monetary_amount",
+      "description": "A specific monetary value with its currency.",
+      "prompt": "Extract explicit monetary values with their currency. Must be a concrete number, not a range or approximation. Format as '<amount> <currency>' (e.g., '50000 EUR')."
+    },
+    {
+      "name": "date_reference",
+      "description": "A specific date or date range.",
+      "prompt": "Extract specific dates or date ranges. Normalize to ISO 8601 format (YYYY-MM-DD). Include context if the date refers to a deadline, effective date, or event."
+    },
+    {
+      "name": "percentage",
+      "description": "A percentage or rate value.",
+      "prompt": "Extract percentage or rate values explicitly stated in the document. Format as the numeric value followed by context (e.g., '15% annual interest rate')."
+    },
+    {
+      "name": "contractual_term",
+      "description": "A binding obligation or clause from a contract.",
+      "prompt": "Extract binding obligations, conditions, deadlines, or clauses from contracts or agreements. Capture the essence of the term in a concise statement."
+    }
+  ]
+}
