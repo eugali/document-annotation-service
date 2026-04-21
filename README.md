@@ -95,6 +95,42 @@ Set up types here *before* uploading documents.
 
 Monitors background processing jobs. Auto-refreshes while jobs are active. Use refresh buttons for manual reload.
 
+## REST API
+
+Base URL: `http://localhost:3000`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/catalog` | List all entity types and fact types |
+| `POST` | `/catalog/entity-types` | Create an entity type |
+| `PUT` | `/catalog/entity-types/:id` | Update an entity type |
+| `DELETE` | `/catalog/entity-types/:id` | Delete an entity type |
+| `POST` | `/catalog/fact-types` | Create a fact type |
+| `PUT` | `/catalog/fact-types/:id` | Update a fact type |
+| `DELETE` | `/catalog/fact-types/:id` | Delete a fact type |
+| `POST` | `/documents` | Upload a document (multipart `file` field) |
+| `GET` | `/documents` | List all documents |
+| `GET` | `/documents/:id/annotations` | Get extracted entities and facts for a document |
+| `GET` | `/jobs` | List all jobs |
+| `GET` | `/jobs/:jobId` | Get job status |
+| `GET` | `/extractions` | List all extractions |
+
+### Quick example
+
+```bash
+# Create an entity type
+curl -X POST http://localhost:3000/catalog/entity-types \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Person", "description": "People mentioned", "prompt": "Extract all people"}'
+
+# Upload a document
+curl -X POST http://localhost:3000/documents \
+  -F "file=@contract.pdf"
+
+# Check extractions
+curl http://localhost:3000/documents/1/annotations
+```
+
 ## Tests
 
 ```bash
