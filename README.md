@@ -10,6 +10,10 @@ A service that extracts structured entities and facts from documents using AI. U
 - The usage of my experimental combination of OpenSpec and Superpowers (Spec Driven Development plugins)
 - The definition of a basic UX/UI part to make the system usable and intuitive from the first step
 
+## System Workflow
+
+For a detailed interactive diagram showing how the system works and where it could be improved, open [`workflow-diagram.html`](workflow-diagram.html) in your browser. It covers the full pipeline — from document upload through chunking, AI extraction, entity/fact linking, and result presentation — along with annotated improvement opportunities.
+
 ## Features
 
 - **Multi-format document ingestion** — PDF, DOCX, XLSX, XLS, CSV with page/cell reference tracking
