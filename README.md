@@ -81,6 +81,8 @@ Define what to extract. Two sections: **Entity Types** and **Fact Types**.
 - **Edit**: modify fields on the card, click "Save".
 - **Delete**: click "Delete" and confirm (removes associated extractions).
 
+Each type's prompt controls what the AI extracts — you can create narrow, specialized types or a single broad "catch-all" type by writing a prompt that captures everything (e.g. "extract all entities" or "extract all facts"). Mix and match as needed.
+
 Set up types here *before* uploading documents.
 
 ### Documents (`/documents`)
