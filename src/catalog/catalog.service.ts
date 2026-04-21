@@ -27,7 +27,7 @@ export class CatalogService {
     return this.prisma.entityType.update({ where: { id }, data });
   }
 
-  async updateFactType(id: string, data: { description?: string; prompt?: string }) {
+  async updateFactType(id: string, data: { description?: string; prompt?: string; entityLinkHint?: string }) {
     const existing = await this.prisma.factType.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`FactType ${id} not found`);
     return this.prisma.factType.update({ where: { id }, data });

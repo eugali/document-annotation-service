@@ -126,7 +126,7 @@ export function updateEntityType(id: string, data: { description?: string; promp
   });
 }
 
-export function updateFactType(id: string, data: { description?: string; prompt?: string }) {
+export function updateFactType(id: string, data: { description?: string; prompt?: string; entityLinkHint?: string }) {
   return request(`/catalog/fact-types/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),

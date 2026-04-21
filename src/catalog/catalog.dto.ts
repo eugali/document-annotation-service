@@ -8,6 +8,10 @@ export class UpdateCatalogTypeDto {
   @IsOptional()
   @IsString()
   prompt?: string;
+
+  @IsOptional()
+  @IsString()
+  entityLinkHint?: string;
 }
 
 export class CreateEntityTypeDto {

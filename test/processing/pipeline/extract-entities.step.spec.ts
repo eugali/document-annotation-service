@@ -64,7 +64,7 @@ describe('extractEntityType', () => {
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.4',
         response_format: expect.objectContaining({
           type: 'json_schema',
         }),

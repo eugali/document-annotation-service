@@ -54,7 +54,7 @@ ${chunkText}`;
   const response = await withRetry(
     () =>
       client.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.4',
         response_format: { type: 'json_schema', json_schema: entityJsonSchema },
         messages: [{ role: 'user', content: prompt }],
       }),

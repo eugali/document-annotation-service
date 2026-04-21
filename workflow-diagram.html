@@ -218,81 +218,15 @@
     margin-top:8px;
   }
 
-  /* ═══ GUIDE SECTION ═══ */
-  .guide{
-    width:100%;overflow-x:scroll;overflow-y:hidden;
-    scrollbar-width:auto;scrollbar-color:var(--border) rgba(255,255,255,.03);
-    background:var(--canvas);
-    border-top:1px solid rgba(255,255,255,.05);
-    border-bottom:1px solid rgba(255,255,255,.05);
+  /* ═══ IMPROVEMENTS SECTION ═══ */
+  .improvements{
+    max-width:720px;margin:0 auto;padding:48px 16px;text-align:left;width:100%;
   }
-  .guide::-webkit-scrollbar{height:10px}
-  .guide::-webkit-scrollbar-track{background:rgba(255,255,255,.03)}
-  .guide::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
-  .guide::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
-  .guide-inner{
-    display:flex;align-items:center;gap:14px;
-    padding:28px 40px 28px;
-    min-width:max-content;
-  }
-  .guide-header{
-    display:flex;align-items:center;gap:8px;
-    flex-shrink:0;padding-top:4px;margin-right:8px;
-  }
-  .guide-header h2{font-size:.9rem;font-weight:600;color:var(--text-bright);white-space:nowrap}
-  .guide-header span{
-    font-size:.55rem;font-weight:600;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--text-dim);
-    background:rgba(255,255,255,.04);padding:3px 8px;border-radius:5px;
-    border:1px solid var(--border);white-space:nowrap;
-  }
-
-  .step-card{
-    width:280px;flex-shrink:0;
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:10px;padding:16px 18px;
-    position:relative;display:flex;flex-direction:column;gap:10px;
-  }
-  .step-card::before{
-    content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
-    border-radius:10px 0 0 10px;background:var(--card-color);opacity:.4;
-  }
-  .step-top{display:flex;align-items:center;gap:8px}
-  .step-num-pill{
-    width:22px;height:22px;border-radius:50%;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    font-size:.6rem;font-weight:700;
-    border:1.5px solid var(--card-color);color:var(--card-color);
-  }
-  .step-card-title{font-size:.72rem;font-weight:600;color:var(--text-bright);line-height:1.25}
-
-  .step-code{
-    font-family:'SF Mono',ui-monospace,Consolas,monospace;
-    font-size:.65rem;line-height:1.65;color:var(--cyan);
-    background:rgba(0,0,0,.25);border-radius:6px;
-    padding:10px 12px;white-space:pre;overflow-x:auto;
-    border:1px solid rgba(255,255,255,.03);
-  }
-  .step-code .cm{color:var(--text-dim)}
-  .step-code .kw{color:var(--green)}
-  .step-code .str{color:var(--orange)}
-  .step-code .flag{color:var(--purple)}
-
-  .step-note{
-    font-size:.65rem;line-height:1.5;color:var(--text-dim);
-  }
-  .step-note code{
-    font-family:'SF Mono',ui-monospace,Consolas,monospace;
-    font-size:.58rem;color:var(--text);
-    background:rgba(255,255,255,.04);padding:1px 4px;border-radius:3px;
-  }
-
-  /* arrow between cards */
-  .step-arrow{
-    display:flex;align-items:center;flex-shrink:0;
-    color:var(--border);font-size:10px;user-select:none;
-    padding-top:14px;
-  }
+  .improvements h2{font-size:1.1rem;font-weight:600;color:var(--text-bright);margin-bottom:32px}
+  .improvements section{margin-bottom:48px}
+  .improvements h3{font-size:.9rem;font-weight:600;color:var(--text-bright);margin-bottom:16px}
+  .improvements ul{list-style:disc;padding-left:24px;display:flex;flex-direction:column;gap:10px}
+  .improvements li{color:var(--text);font-size:.85rem;line-height:1.5}
 </style>
 </head>
 <body>
@@ -605,123 +539,31 @@
 </div>
 </div>
 
-<!-- ══�� QUICKSTART GUIDE ═══ -->
-<div class="guide">
-  <div class="guide-inner">
 
-  <div class="guide-header">
-    <h2>Try it end-to-end</h2>
-    <span>quickstart</span>
-  </div>
 
-    <!-- 1 -->
-    <div class="step-card" style="--card-color:var(--slate)">
-      <div class="step-top">
-        <div class="step-num-pill">1</div>
-        <div class="step-card-title">Prerequisites</div>
-      </div>
-      <div class="step-code"><span class="cm"># Start Redis (required for job queue)</span>
-docker compose up -d</div>
-      <div class="step-note">Starts Redis on <code>localhost:6379</code>. Needs Docker and Node.js installed.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 2 -->
-    <div class="step-card" style="--card-color:var(--blue)">
-      <div class="step-top">
-        <div class="step-num-pill">2</div>
-        <div class="step-card-title">Install &amp; configure</div>
-      </div>
-      <div class="step-code">npm install
-cp .env.example .env
-<span class="cm"># edit .env → set OPENAI_API_KEY</span></div>
-      <div class="step-note"><code>REDIS_URL</code>, <code>DATABASE_URL</code>, <code>MAX_CONCURRENT_JOBS</code> have working defaults.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 3 -->
-    <div class="step-card" style="--card-color:var(--purple)">
-      <div class="step-top">
-        <div class="step-num-pill">3</div>
-        <div class="step-card-title">Init database</div>
-      </div>
-      <div class="step-code">npx prisma generate
-npx prisma migrate deploy</div>
-      <div class="step-note">Creates SQLite DB at <code>dev.db</code> and applies all migrations. Must run before first start.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 4 -->
-    <div class="step-card" style="--card-color:var(--orange)">
-      <div class="step-top">
-        <div class="step-num-pill">4</div>
-        <div class="step-card-title">Configure catalog</div>
-      </div>
-      <div class="step-code"><span class="cm"># edit to add/change types</span>
-prisma/seed/catalog.json</div>
-      <div class="step-note">Defines which entity types (person, organization, location) and fact types (monetary_amount, date_reference, percentage, contractual_term) to extract. Edit this file to customize. Auto-seeded into DB on server start.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 5 -->
-    <div class="step-card" style="--card-color:var(--green)">
-      <div class="step-top">
-        <div class="step-num-pill">5</div>
-        <div class="step-card-title">Start the server</div>
-      </div>
-      <div class="step-code">npm run start:dev</div>
-      <div class="step-note">Runs on <code>:3000</code>. On startup, reads <code>catalog.json</code> and upserts all entity &amp; fact types into the DB automatically.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 6 -->
-    <div class="step-card" style="--card-color:var(--teal)">
-      <div class="step-top">
-        <div class="step-num-pill">6</div>
-        <div class="step-card-title">Upload a document</div>
-      </div>
-      <div class="step-code"><span class="kw">curl</span> <span class="flag">-X POST</span> \
-  http://localhost:3000/documents \
-  <span class="flag">-F</span> <span class="str">"file=@doc.pdf"</span></div>
-      <div class="step-note">Returns <code>202</code> with <code>{ "id": "..." }</code>. Supports PDF, DOCX, XLSX, XLS, CSV.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 7 -->
-    <div class="step-card" style="--card-color:var(--cyan)">
-      <div class="step-top">
-        <div class="step-num-pill">7</div>
-        <div class="step-card-title">Poll for status</div>
-      </div>
-      <div class="step-code"><span class="kw">curl</span> http://localhost:3000\
-  /documents/<span class="str">{id}</span>/annotations</div>
-      <div class="step-note">Returns <code>202</code> while <code>pending</code> or <code>processing</code>. Poll every ~3s until status changes.</div>
-    </div>
-
-    <div class="step-arrow">&#x25B8;</div>
-
-    <!-- 8 -->
-    <div class="step-card" style="--card-color:var(--lime)">
-      <div class="step-top">
-        <div class="step-num-pill">8</div>
-        <div class="step-card-title">Get annotations</div>
-      </div>
-      <div class="step-code"><span class="cm"># same endpoint, once status=done</span>
-{ <span class="str">"status"</span>: <span class="str">"done"</span>,
-  <span class="str">"entities"</span>: { <span class="str">"person"</span>: [...] },
-  <span class="str">"facts"</span>: { <span class="str">"date"</span>: [...] } }</div>
-      <div class="step-note">Entities grouped by type. Facts grouped by type. <code>partial</code> if some chunks failed.</div>
-    </div>
-
-  </div>
+<!-- ═══ IMPROVEMENTS ═══ -->
+<div class="improvements">
+  <h2>Improvements</h2>
+  <section>
+    <h3>GenAI Pipeline</h3>
+    <ul>
+      <li>Semantic chunking — split by document structure (sections, paragraphs) instead of fixed 100k-token blocks.</li>
+      <li>Embedding-based entity deduplication instead of LLM string matching — faster, cheaper, more accurate.</li>
+      <li>Backfill existing documents when a new entity or fact type is added to the catalog.</li>
+      <li>Per-extraction confidence scores to let reviewers prioritize low-confidence results.</li>
+      <li>Evaluation test sets to benchmark extraction quality at scale for specific entity and fact types.</li>
+    </ul>
+  </section>
+  <section>
+    <h3>General Platform</h3>
+    <ul>
+      <li>User authentication and role-based access control for multi-tenant usage.</li>
+      <li>Link a single entity to multiple documents, enabling cross-document relationship mapping.</li>
+      <li>Real-time pipeline progress via SSE instead of polling.</li>
+      <li>Full audit log tracking uploads, annotations, and re-processing per document.</li>
+    </ul>
+  </section>
 </div>
-
 
 <div class="modal-overlay" id="overlay"></div>
 <div class="modal" id="modal">

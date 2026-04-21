@@ -1,34 +1,32 @@
-import { useState } from 'react';
-import { ReadmeTab } from './tabs/ReadmeTab';
+import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { DocumentsTab } from './tabs/DocumentsTab';
 import { CatalogTab } from './tabs/CatalogTab';
-import { GraphTab } from './tabs/GraphTab';
 import { JobsTab } from './tabs/JobsTab';
-import { ImprovementsTab } from './tabs/ImprovementsTab';
 import './App.css';
 
-type Tab = 'readme' | 'documents' | 'catalog' | 'graph' | 'jobs' | 'improvements';
+const tabs = [
+  { path: '/documents', label: 'Documents' },
+  { path: '/catalog', label: 'Catalog' },
+  { path: '/jobs', label: 'Jobs' },
+] as const;
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('readme');
-
   return (
     <div className="app">
       <nav className="tabs">
-        <button className={tab === 'readme' ? 'active' : ''} onClick={() => setTab('readme')}>README</button>
-        <button className={tab === 'documents' ? 'active' : ''} onClick={() => setTab('documents')}>Documents</button>
-        <button className={tab === 'catalog' ? 'active' : ''} onClick={() => setTab('catalog')}>Catalog</button>
-        <button className={tab === 'graph' ? 'active' : ''} onClick={() => setTab('graph')}>Graph</button>
-        <button className={tab === 'jobs' ? 'active' : ''} onClick={() => setTab('jobs')}>Jobs</button>
-        <button className={tab === 'improvements' ? 'active' : ''} onClick={() => setTab('improvements')}>Improvements</button>
+        {tabs.map(({ path, label }) => (
+          <NavLink key={path} to={path} className={({ isActive }) => isActive ? 'active' : ''}>
+            {label}
+          </NavLink>
+        ))}
       </nav>
       <main className="content">
-        {tab === 'readme' && <ReadmeTab />}
-        {tab === 'documents' && <DocumentsTab />}
-        {tab === 'catalog' && <CatalogTab />}
-        {tab === 'graph' && <GraphTab />}
-        {tab === 'jobs' && <JobsTab />}
-        {tab === 'improvements' && <ImprovementsTab />}
+        <Routes>
+          <Route path="/documents" element={<DocumentsTab />} />
+          <Route path="/catalog" element={<CatalogTab />} />
+          <Route path="/jobs" element={<JobsTab />} />
+          <Route path="*" element={<Navigate to="/documents" replace />} />
+        </Routes>
       </main>
     </div>
   );

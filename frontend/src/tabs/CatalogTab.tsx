@@ -61,7 +61,7 @@ function CreateForm({
           <textarea rows={2} value={form.prompt} onChange={(e) => update('prompt', e.target.value)} />
         </div>
         {kind === 'fact' && (
-          <div className="catalog-field">
+          <div className="catalog-field catalog-field--full">
             <label>Entity Link Hint (optional)</label>
             <input
               value={form.entityLinkHint}
@@ -105,7 +105,7 @@ export function CatalogTab() {
     list: CatalogType[],
     setList: (v: CatalogType[]) => void,
     id: string,
-    field: 'description' | 'prompt',
+    field: 'description' | 'prompt' | 'entityLinkHint',
     value: string,
   ) {
     setList(list.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
@@ -113,8 +113,11 @@ export function CatalogTab() {
 
   async function handleSave(kind: 'entity' | 'fact', item: CatalogType) {
     try {
-      const fn = kind === 'entity' ? updateEntityType : updateFactType;
-      await fn(item.id, { description: item.description, prompt: item.prompt });
+      if (kind === 'entity') {
+        await updateEntityType(item.id, { description: item.description, prompt: item.prompt });
+      } else {
+        await updateFactType(item.id, { description: item.description, prompt: item.prompt, entityLinkHint: item.entityLinkHint ?? undefined });
+      }
       setSaved(item.id);
       setTimeout(() => setSaved(null), 2000);
     } catch (e: unknown) {
@@ -173,6 +176,16 @@ export function CatalogTab() {
             <label>Prompt</label>
             <textarea rows={3} value={item.prompt} onChange={(e) => handleChange(list, setList, item.id, 'prompt', e.target.value)} />
           </div>
+          {kind === 'fact' && (
+            <div className="catalog-field catalog-field--full">
+              <label>Entity Link Hint</label>
+              <input
+                value={item.entityLinkHint ?? ''}
+                onChange={(e) => handleChange(list, setList, item.id, 'entityLinkHint', e.target.value)}
+                placeholder="e.g., often related to person or organization"
+              />
+            </div>
+          )}
         </div>
       </div>
     );

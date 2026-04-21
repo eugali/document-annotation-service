@@ -96,7 +96,7 @@ export async function deduplicateEntities(
     const response = await withRetry(
       () =>
         client.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: 'gpt-5.4',
           response_format: {
             type: 'json_schema',
             json_schema: dedupJsonSchema,

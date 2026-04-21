@@ -20,22 +20,26 @@
     {
       "name": "monetary_amount",
       "description": "A specific monetary value with its currency.",
-      "prompt": "Extract explicit monetary values with their currency. Must be a concrete number, not a range or approximation. Format as '<amount> <currency>' (e.g., '50000 EUR')."
+      "prompt": "Extract explicit monetary values with their currency. Must be a concrete number, not a range or approximation. Format as '<amount> <currency>' (e.g., '50000 EUR').",
+      "entityLinkHint": "Often related to a person (salary, compensation) or organization (revenue, contract value)."
     },
     {
       "name": "date_reference",
       "description": "A specific date or date range.",
-      "prompt": "Extract specific dates or date ranges. Normalize to ISO 8601 format (YYYY-MM-DD). Include context if the date refers to a deadline, effective date, or event."
+      "prompt": "Extract specific dates or date ranges. Normalize to ISO 8601 format (YYYY-MM-DD). Include context if the date refers to a deadline, effective date, or event.",
+      "entityLinkHint": "Often related to a person (birth date, hire date) or organization (founding date, contract date)."
     },
     {
       "name": "percentage",
       "description": "A percentage or rate value.",
-      "prompt": "Extract percentage or rate values explicitly stated in the document. Format as the numeric value followed by context (e.g., '15% annual interest rate')."
+      "prompt": "Extract percentage or rate values explicitly stated in the document. Format as the numeric value followed by context (e.g., '15% annual interest rate').",
+      "entityLinkHint": "Often related to an organization (interest rate, ownership stake) or a contractual term."
     },
     {
       "name": "contractual_term",
       "description": "A binding obligation or clause from a contract.",
-      "prompt": "Extract binding obligations, conditions, deadlines, or clauses from contracts or agreements. Capture the essence of the term in a concise statement."
+      "prompt": "Extract binding obligations, conditions, deadlines, or clauses from contracts or agreements. Capture the essence of the term in a concise statement.",
+      "entityLinkHint": "Often related to a person or organization that is bound by the term."
     }
   ]
 }

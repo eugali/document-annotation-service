@@ -48,8 +48,8 @@ export class CatalogSeeder implements OnModuleInit {
   private async upsertFactType(entry: CatalogTypeDef): Promise<void> {
     await this.prisma.factType.upsert({
       where: { name: entry.name },
-      update: { description: entry.description, prompt: entry.prompt },
-      create: { name: entry.name, description: entry.description, prompt: entry.prompt },
+      update: { description: entry.description, prompt: entry.prompt, entityLinkHint: entry.entityLinkHint ?? null },
+      create: { name: entry.name, description: entry.description, prompt: entry.prompt, entityLinkHint: entry.entityLinkHint ?? null },
     });
   }
 

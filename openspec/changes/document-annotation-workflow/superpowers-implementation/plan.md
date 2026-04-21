@@ -8,6 +8,32 @@
 
 > **Implementation note:** The original plan referenced `stream.filter().take().toArray()` for fan-in, but this API does not exist in `@llamaindex/workflow-core` v1.3.3. The `collectEvents` API also does not exist. State-based accumulation was used instead — the `extractionResultEvent` handler pushes each result into `state.collectedResults` and emits `extractionCollectedEvent` when `collectedResults.length === expectedResultCount`.
 
+---
+
+## ✅ Implementation Status (aligned 2026-04-21)
+
+**All 19 tasks are COMPLETE.** Implementation evolved significantly beyond the original plan scope:
+
+### Deviations from Plan
+
+| Area | Plan | Actual |
+|------|------|--------|
+| **LLM Model** | `gpt-4o-mini` | `gpt-5.4` |
+| **Fan-in mechanism** | `stream.filter().take().toArray()` | State-based accumulation (`state.collectedResults.push()` + length check) |
+| **Workflow steps** | 6 steps (parse → chunk → extract → collect → dedup → persist) | **7 steps** — linking step inserted between dedup and persist |
+| **Persist signature** | `persistResults(prisma, docId, entities, facts)` — 4 params | `persistResults(prisma, docId, entities, facts, links)` — **5 params** |
+| **ExtractionWorkflowState** | No `collectedResults` or `entityLinkHint` | Includes `collectedResults: ExtractionTaskResult[]` and `entityLinkHint` on factTypes |
+| **DedupedEntity** | `{ typeName, name, mergedFrom }` | `{ typeName, name, mergedFrom, sources: EntitySourceData[] }` |
+
+### Added Beyond Plan (from fact-entity-linking change)
+- **Source provenance**: `ExtractedEntity` now has `sourceSnippet`, `sourcePage`, `sourceCell`, `chunkIndex`. `ExtractedFact` has `sourceSnippet`, `sourcePage`, `sourceCell`. JSON schemas request these fields from OpenAI.
+- **Fact-entity linking step**: `src/processing/pipeline/steps/link-facts-to-entities.step.ts` — LLM call to link facts to entities. New `FactEntity` Prisma model, `LinkingResult` type, `linkingCompleteEvent` workflow event.
+- **Webhook service**: `ProcessingProcessor` calls `WebhookService.notify()` after processing.
+- **Extractions module**: `GET /extractions` endpoint with grouped entities/facts/documents.
+- **Schema additions**: `EntitySource` model, `FactEntity` model, source columns on `Fact`, `entityLinkHint` on `FactType`, cascade deletes, `@@unique([entityTypeId, name])` on `Entity`.
+
+---
+
 **Tech Stack:** NestJS 11, Prisma 7 (SQLite), BullMQ, OpenAI gpt-4o-mini, @llamaindex/workflow-core 1.3.3, gpt-tokenizer (cl100k_base), mammoth (Word), csv-parse (CSV)
 
 ---

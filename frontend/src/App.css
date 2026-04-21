@@ -77,7 +77,7 @@ body {
   z-index: 10;
 }
 
-.tabs button {
+.tabs a {
   padding: 8px 18px;
   border: none;
   background: transparent;
@@ -87,15 +87,16 @@ body {
   font-weight: 500;
   color: var(--text-dim);
   border-radius: 8px;
+  text-decoration: none;
   transition: color var(--transition), background var(--transition);
 }
 
-.tabs button:hover {
+.tabs a:hover {
   color: var(--text-bright);
   background: var(--surface-hi);
 }
 
-.tabs button.active {
+.tabs a.active {
   color: var(--blue);
   font-weight: 600;
   background: var(--blue-g);
@@ -260,9 +261,20 @@ input[type="file"] { margin-right: 8px; color: var(--text-dim); font-size: 0.73r
   gap: 8px;
 }
 
+.catalog-field--full {
+  grid-column: 1 / -1;
+}
+
 .catalog-field label {
   margin: 0 0 2px;
   font-size: 0.65rem;
+}
+
+.catalog-field input {
+  width: 100%;
+  font-size: 0.73rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
 }
 
 .catalog-field textarea {
@@ -351,8 +363,53 @@ label {
   color: var(--text-dim);
 }
 
-.annotation-group { margin-bottom: 8px; }
+.annotation-group {
+  margin-bottom: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+}
+
 .annotation-group:last-child { margin-bottom: 0; }
+
+.annotation-group h4 {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.annotation-section--entities .annotation-group h4 {
+  background: var(--blue-g);
+  color: var(--blue);
+}
+
+.annotation-section--facts .annotation-group h4 {
+  background: var(--green-g);
+  color: var(--green);
+}
+
+.annotation-group ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.annotation-group ul li {
+  font-size: 0.73rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--surface-hi);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
 
 /* ── Annotation / Extraction Badges ── */
 .annotation-badge {
@@ -466,3 +523,4 @@ label {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+
