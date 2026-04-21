@@ -26,17 +26,38 @@ export interface DocumentChunk {
 export interface ExtractedEntity {
   typeName: string;
   name: string;
+  sourceSnippet: string;
+  sourcePage?: number;
+  sourceCell?: string;
+  chunkIndex: number;
 }
 
 export interface ExtractedFact {
   typeName: string;
   value: string;
+  sourceSnippet: string;
+  sourcePage?: number;
+  sourceCell?: string;
+}
+
+export interface EntitySourceData {
+  snippet: string;
+  page?: number;
+  cell?: string;
+  chunkIndex: number;
 }
 
 export interface DedupedEntity {
   typeName: string;
   name: string;
   mergedFrom: string[];
+  sources: EntitySourceData[];
+}
+
+export interface LinkingResult {
+  factIndex: number;
+  entityNames: string[];
+  entityTypes: string[];
 }
 
 export interface ExtractionTaskResult {
