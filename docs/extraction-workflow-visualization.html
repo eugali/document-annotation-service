@@ -1,0 +1,1543 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Annotation LlamaIndex Workflow Visualization</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      window.__mermaid = mermaid;
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'loose',
+        themeVariables: {
+          background: '#0a0f1f',
+          primaryColor: '#111a33',
+          primaryTextColor: '#e8eeff',
+          primaryBorderColor: '#4f6fff',
+          lineColor: '#6f86ff',
+          secondaryColor: '#102142',
+          tertiaryColor: '#0c1730',
+          clusterBkg: '#0f1630',
+          clusterBorder: '#30457f',
+          edgeLabelBackground: '#10182f',
+          fontFamily: 'Inter, system-ui, sans-serif',
+        },
+        flowchart: {
+          curve: 'basis',
+          htmlLabels: true,
+          useMaxWidth: true,
+        },
+      });
+    </script>
+    <style>
+      :root {
+        --bg: #070b16;
+        --panel: rgba(13, 19, 38, 0.82);
+        --panel-strong: rgba(16, 25, 48, 0.96);
+        --panel-soft: rgba(18, 29, 55, 0.72);
+        --text: #eef3ff;
+        --muted: #98a7cf;
+        --dim: #7280a7;
+        --accent: #7c96ff;
+        --accent-2: #60d0ff;
+        --accent-3: #8bffcf;
+        --warn: #ffd479;
+        --danger: #ff8f8f;
+        --success: #7dffd3;
+        --border: rgba(124, 150, 255, 0.2);
+        --border-strong: rgba(124, 150, 255, 0.38);
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+        --radius: 22px;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(96, 208, 255, 0.14), transparent 28%),
+          radial-gradient(circle at top right, rgba(124, 150, 255, 0.14), transparent 30%),
+          linear-gradient(180deg, #050914 0%, #070b16 35%, #060914 100%);
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+        background-size: 36px 36px;
+        mask-image: radial-gradient(circle at center, black, transparent 85%);
+      }
+
+      .container {
+        width: min(1420px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 56px;
+      }
+
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        position: relative;
+        overflow: hidden;
+        padding: 28px;
+        border-radius: 28px;
+        background: linear-gradient(180deg, rgba(18, 27, 52, 0.92), rgba(10, 16, 31, 0.9));
+      }
+
+      .hero::after {
+        content: '';
+        position: absolute;
+        right: -80px;
+        top: -80px;
+        width: 240px;
+        height: 240px;
+        background: radial-gradient(circle, rgba(124,150,255,.35), transparent 65%);
+        filter: blur(10px);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(139, 255, 207, 0.2);
+        background: rgba(139, 255, 207, 0.08);
+        color: var(--accent-3);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 16px 0 10px;
+        font-size: clamp(2.2rem, 4vw, 4rem);
+        line-height: 1.02;
+        letter-spacing: -0.045em;
+      }
+
+      h2,
+      h3,
+      h4 { letter-spacing: -0.02em; }
+
+      .lead {
+        max-width: 930px;
+        color: var(--muted);
+        font-size: 1.03rem;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .stat {
+        padding: 16px 18px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(255,255,255,0.03);
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 1.35rem;
+        margin-bottom: 4px;
+      }
+
+      .stat span {
+        color: var(--dim);
+        font-size: 0.92rem;
+      }
+
+      .sources {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .source-chip {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        color: var(--muted);
+        padding: 10px 12px;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: transform .18s ease, border-color .18s ease, background .18s ease;
+      }
+
+      .source-chip:hover {
+        transform: translateY(-1px);
+        border-color: var(--border-strong);
+        background: rgba(124,150,255,.1);
+      }
+
+      .workflow-map {
+        margin-top: 18px;
+        padding: 22px;
+      }
+
+      .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .section-head h2,
+      .sidebar h2,
+      .content h2 {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+      }
+
+      .section-head p,
+      .sidebar p,
+      .small-copy,
+      .note-card p,
+      .note-card li,
+      .mini p,
+      .mini li,
+      .step-detail p,
+      .footer-note,
+      .lead,
+      .sim-help,
+      .sim-meta,
+      .focus-note {
+        color: var(--muted);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .ghost-btn,
+      .tab,
+      .step-btn,
+      .stage-card,
+      .source-chip,
+      .range-label input {
+        font: inherit;
+      }
+
+      .ghost-btn {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+        color: var(--text);
+        border-radius: 14px;
+        padding: 10px 14px;
+        transition: transform .18s ease, border-color .18s ease, background .18s ease;
+      }
+
+      .ghost-btn:hover {
+        transform: translateY(-1px);
+        border-color: var(--border-strong);
+        background: linear-gradient(180deg, rgba(124,150,255,.14), rgba(96,208,255,.08));
+      }
+
+      .ghost-btn[aria-pressed="true"] {
+        border-color: rgba(139,255,207,.4);
+        background: linear-gradient(180deg, rgba(139,255,207,.14), rgba(96,208,255,.08));
+      }
+
+      .rail {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(200px, 1fr));
+        gap: 14px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+
+      .stage-card {
+        cursor: pointer;
+        min-height: 138px;
+        padding: 16px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+        color: var(--text);
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+
+      .stage-card:hover,
+      .stage-card.active {
+        transform: translateY(-2px);
+        border-color: var(--border-strong);
+        background: linear-gradient(180deg, rgba(124,150,255,.13), rgba(96,208,255,.08));
+        box-shadow: 0 14px 32px rgba(36, 56, 120, 0.24);
+      }
+
+      .stage-card.active[data-step="step-5"] {
+        border-color: rgba(255,212,121,.5);
+        background: linear-gradient(180deg, rgba(255,212,121,.15), rgba(255,212,121,.06));
+      }
+
+      .stage-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .stage-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(124,150,255,.16);
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 0.84rem;
+      }
+
+      .stage-tag {
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+
+      .stage-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 1rem;
+      }
+
+      .stage-card small {
+        display: block;
+        color: var(--dim);
+        line-height: 1.45;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 18px;
+        padding: 18px;
+        height: fit-content;
+      }
+
+      .focus-card {
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(18,27,52,.78), rgba(10,16,31,.82));
+      }
+
+      .focus-card h3 {
+        margin: 10px 0 8px;
+        font-size: 1.2rem;
+      }
+
+      .focus-kicker {
+        color: var(--accent-3);
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .focus-summary {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .focus-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .metric {
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--dim);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: 6px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 0.93rem;
+        line-height: 1.4;
+      }
+
+      .focus-note {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(96,208,255,.18);
+        background: rgba(96,208,255,.08);
+      }
+
+      .quick-jumps {
+        margin-top: 18px;
+      }
+
+      .step-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .step-btn {
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        color: var(--text);
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+        border-radius: 18px;
+        padding: 14px 14px 14px 16px;
+        transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+      }
+
+      .step-btn:hover,
+      .step-btn.active {
+        transform: translateY(-1px);
+        border-color: var(--border-strong);
+        background: linear-gradient(180deg, rgba(124,150,255,.12), rgba(96,208,255,.08));
+        box-shadow: 0 12px 28px rgba(40, 62, 132, 0.28);
+      }
+
+      .step-btn.active[data-step="step-5"] {
+        border-color: rgba(255,212,121,.5);
+        background: linear-gradient(180deg, rgba(255,212,121,.13), rgba(255,212,121,.05));
+      }
+
+      .step-index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        margin-right: 10px;
+        background: rgba(124,150,255,.18);
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .step-title {
+        font-size: 0.98rem;
+        font-weight: 650;
+        vertical-align: middle;
+      }
+
+      .step-sub {
+        margin-top: 8px;
+        color: var(--dim);
+        font-size: 0.88rem;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+
+      .tabs {
+        display: inline-flex;
+        gap: 8px;
+        padding: 6px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.03);
+        flex-wrap: wrap;
+      }
+
+      .tab {
+        cursor: pointer;
+        border: 0;
+        color: var(--muted);
+        background: transparent;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-weight: 600;
+        transition: all .18s ease;
+      }
+
+      .tab.active {
+        color: var(--text);
+        background: linear-gradient(90deg, rgba(124,150,255,.22), rgba(96,208,255,.18));
+        box-shadow: inset 0 0 0 1px rgba(124,150,255,.18);
+      }
+
+      .badge-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        font-size: 0.88rem;
+      }
+
+      .badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 12px var(--accent);
+      }
+
+      .view { display: none; }
+      .view.active { display: block; }
+
+      .diagram-shell {
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(9,14,29,.92), rgba(8,12,24,.92));
+        overflow: auto;
+      }
+
+      .mermaid { min-width: 850px; }
+
+      .notes-grid,
+      .detail-grid,
+      .simulator-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .notes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .detail-grid { grid-template-columns: 1.2fr .8fr; gap: 14px; }
+      .simulator-grid { grid-template-columns: 1fr 1fr; }
+
+      .note-card,
+      .mini,
+      .sim-card {
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: var(--panel-soft);
+      }
+
+      .note-card h3,
+      .mini h4,
+      .sim-card h3 {
+        margin: 0 0 8px;
+      }
+
+      .note-card ul,
+      .mini ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .spotlight {
+        margin-top: 18px;
+        padding: 20px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 212, 121, 0.22);
+        background: linear-gradient(180deg, rgba(255,212,121,.08), rgba(255,212,121,.03));
+      }
+
+      .spotlight h3 {
+        margin: 0 0 8px;
+      }
+
+      .spotlight p {
+        margin: 0 0 14px;
+        color: #e9d8aa;
+      }
+
+      .spotlight .ghost-btn {
+        border-color: rgba(255,212,121,.25);
+      }
+
+      .steps-panel {
+        margin-top: 18px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .step-detail {
+        display: none;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(18,27,52,.78), rgba(10,16,31,.82));
+      }
+
+      .step-detail.active {
+        display: block;
+        animation: fade .22s ease;
+      }
+
+      .step-detail.step-dedup {
+        border-color: rgba(255,212,121,.35);
+        background: linear-gradient(180deg, rgba(55,44,16,.76), rgba(24,20,10,.84));
+      }
+
+      .step-detail h3 {
+        margin: 0 0 8px;
+        font-size: 1.1rem;
+      }
+
+      code {
+        padding: 3px 8px;
+        border-radius: 9px;
+        background: rgba(124,150,255,.12);
+        color: #dfe6ff;
+        border: 1px solid rgba(124,150,255,.14);
+      }
+
+      .sim-card { margin-top: 18px; }
+
+      .range-row {
+        display: grid;
+        gap: 14px;
+      }
+
+      .range-label {
+        display: grid;
+        gap: 8px;
+      }
+
+      .range-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 0.93rem;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+
+      .sim-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .sim-metric {
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+      }
+
+      .sim-metric span {
+        display: block;
+        color: var(--dim);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: 8px;
+      }
+
+      .sim-metric strong {
+        font-size: 1.2rem;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: 1px solid var(--border);
+        margin-top: 10px;
+      }
+
+      .status-pill[data-status="done"] {
+        color: #dcfff5;
+        border-color: rgba(125,255,211,.28);
+        background: rgba(125,255,211,.12);
+      }
+
+      .status-pill[data-status="partial"] {
+        color: #fff0cc;
+        border-color: rgba(255,212,121,.28);
+        background: rgba(255,212,121,.12);
+      }
+
+      .formula {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(96,208,255,.18);
+        background: rgba(96,208,255,.07);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #dff8ff;
+      }
+
+      .footer-note {
+        margin-top: 14px;
+        font-size: 0.88rem;
+      }
+
+      .toast {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 1000;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(12, 18, 34, 0.94);
+        color: var(--text);
+        box-shadow: var(--shadow);
+        opacity: 0;
+        transform: translateY(10px);
+        pointer-events: none;
+        transition: opacity .2s ease, transform .2s ease;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @keyframes fade {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @media (max-width: 1180px) {
+        .layout,
+        .stats,
+        .simulator-grid,
+        .notes-grid,
+        .detail-grid,
+        .focus-grid,
+        .sim-metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+        }
+
+        .rail {
+          grid-template-columns: repeat(6, minmax(240px, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .container {
+          width: min(100vw - 20px, 1420px);
+          padding-top: 16px;
+        }
+
+        .hero,
+        .workflow-map,
+        .sidebar,
+        .content {
+          padding: 16px;
+        }
+
+        .tabs {
+          border-radius: 22px;
+        }
+
+        .mermaid {
+          min-width: 700px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <section class="hero panel">
+        <div class="eyebrow">LlamaIndex Workflow · Dark Interactive Visualization</div>
+        <h1>Document Annotation Workflow</h1>
+        <p class="lead">
+          An interactive map of the NestJS + LlamaIndex extraction pipeline: parse the document,
+          chunk it, fan out per-type extraction tasks, fan in results through workflow state,
+          <strong>deduplicate entities</strong>, persist output, and mark the document <code>partial</code>
+          when some extraction tasks fail.
+        </p>
+
+        <div class="stats">
+          <div class="stat"><strong>6</strong><span>Primary workflow stages</span></div>
+          <div class="stat"><strong>7</strong><span>Core workflow events</span></div>
+          <div class="stat"><strong>Fan-out</strong><span>chunk × entity/fact type tasks</span></div>
+          <div class="stat"><strong>Dedup</strong><span>explicit entity-only step</span></div>
+        </div>
+
+        <div class="sources">
+          <button class="source-chip" data-copy="src/processing/pipeline/extraction.workflow.ts">Copy source: extraction.workflow.ts</button>
+          <button class="source-chip" data-copy="src/processing/pipeline/create-extraction-workflow.ts">Copy source: create-extraction-workflow.ts</button>
+          <button class="source-chip" data-copy="src/processing/pipeline/workflow-events.ts">Copy source: workflow-events.ts</button>
+        </div>
+      </section>
+
+      <section class="workflow-map panel">
+        <div class="section-head">
+          <div>
+            <h2>Interactive stage map</h2>
+            <p class="small-copy">Click any stage below, use the controls, or use your keyboard arrow keys to walk the workflow.</p>
+          </div>
+          <div class="controls">
+            <button class="ghost-btn" id="prev-step">← Previous</button>
+            <button class="ghost-btn" id="play-tour" aria-pressed="false">▶ Play tour</button>
+            <button class="ghost-btn" id="next-step">Next →</button>
+          </div>
+        </div>
+
+        <div class="rail" id="workflow-rail">
+          <button class="stage-card active step-trigger" data-step="step-1">
+            <div class="stage-top"><span class="stage-number">1</span><span class="stage-tag">Entry</span></div>
+            <strong>Parse document</strong>
+            <small>Consume <code>startExtractionEvent</code> and emit <code>documentParsedEvent</code>.</small>
+          </button>
+          <button class="stage-card step-trigger" data-step="step-2">
+            <div class="stage-top"><span class="stage-number">2</span><span class="stage-tag">Fan-out</span></div>
+            <strong>Chunk + task emission</strong>
+            <small>Compute <code>expectedResultCount</code> and emit one task per chunk/type pair.</small>
+          </button>
+          <button class="stage-card step-trigger" data-step="step-3">
+            <div class="stage-top"><span class="stage-number">3</span><span class="stage-tag">Extraction</span></div>
+            <strong>Per-type extraction</strong>
+            <small>Route to <code>extractEntityType</code> or <code>extractFactType</code>.</small>
+          </button>
+          <button class="stage-card step-trigger" data-step="step-4">
+            <div class="stage-top"><span class="stage-number">4</span><span class="stage-tag">Fan-in</span></div>
+            <strong>Collect results</strong>
+            <small>Push into <code>state.collectedResults</code> until all results arrive.</small>
+          </button>
+          <button class="stage-card step-trigger" data-step="step-5">
+            <div class="stage-top"><span class="stage-number">5</span><span class="stage-tag">Dedup</span></div>
+            <strong>Deduplicate entities</strong>
+            <small>Explicit handler: <code>extractionCollectedEvent → dedupCompleteEvent</code>.</small>
+          </button>
+          <button class="stage-card step-trigger" data-step="step-6">
+            <div class="stage-top"><span class="stage-number">6</span><span class="stage-tag">Persist</span></div>
+            <strong>Persist + mark partial</strong>
+            <small>Persist successful output and set <code>status: 'partial'</code> if needed.</small>
+          </button>
+        </div>
+      </section>
+
+      <div class="layout">
+        <aside class="sidebar panel">
+          <div class="focus-card">
+            <div class="focus-kicker">Current focus</div>
+            <h3 id="focus-title">Step 1 · Parse document</h3>
+            <p class="focus-summary" id="focus-summary">
+              Consume <code>startExtractionEvent</code>, parse the uploaded file with retry, and emit <code>documentParsedEvent</code>.
+            </p>
+
+            <div class="focus-grid">
+              <div class="metric">
+                <span>Consumes</span>
+                <strong id="focus-consumes">startExtractionEvent</strong>
+              </div>
+              <div class="metric">
+                <span>Emits</span>
+                <strong id="focus-emits">documentParsedEvent</strong>
+              </div>
+              <div class="metric">
+                <span>State behavior</span>
+                <strong id="focus-state">No workflow state mutation</strong>
+              </div>
+              <div class="metric">
+                <span>Failure behavior</span>
+                <strong id="focus-failure">Parsing is retried before bubbling</strong>
+              </div>
+            </div>
+
+            <div class="focus-note" id="focus-note">
+              This is the entry point into the text-processing pipeline.
+            </div>
+          </div>
+
+          <div class="quick-jumps">
+            <h2>Quick step explorer</h2>
+            <p>Jump directly to any phase. The active step is synced with the stage map and the details view.</p>
+            <div class="step-list">
+              <button class="step-btn active step-trigger" data-step="step-1">
+                <span class="step-index">1</span><span class="step-title">Parse document</span>
+                <div class="step-sub">startExtractionEvent → documentParsedEvent</div>
+              </button>
+              <button class="step-btn step-trigger" data-step="step-2">
+                <span class="step-index">2</span><span class="step-title">Chunk + fan-out tasks</span>
+                <div class="step-sub">Compute expectedResultCount and emit extractionTaskEvent(s)</div>
+              </button>
+              <button class="step-btn step-trigger" data-step="step-3">
+                <span class="step-index">3</span><span class="step-title">Per-type extraction</span>
+                <div class="step-sub">Entity/fact extraction handlers emit extractionResultEvent</div>
+              </button>
+              <button class="step-btn step-trigger" data-step="step-4">
+                <span class="step-index">4</span><span class="step-title">Fan-in collection</span>
+                <div class="step-sub">Use state.collectedResults until all tasks complete</div>
+              </button>
+              <button class="step-btn step-trigger" data-step="step-5">
+                <span class="step-index">5</span><span class="step-title">Deduplicate entities</span>
+                <div class="step-sub">extractionCollectedEvent → dedupCompleteEvent</div>
+              </button>
+              <button class="step-btn step-trigger" data-step="step-6">
+                <span class="step-index">6</span><span class="step-title">Persist + mark partial</span>
+                <div class="step-sub">Persist deduped entities and raw facts, then finish</div>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <main class="content panel">
+          <div class="toolbar">
+            <div class="tabs" role="tablist" aria-label="Workflow views">
+              <button class="tab active" data-view="overview" role="tab" aria-selected="true">Overview</button>
+              <button class="tab" data-view="events" role="tab" aria-selected="false">Event Graph</button>
+              <button class="tab" data-view="fanin" role="tab" aria-selected="false">Fan-out / Fan-in</button>
+              <button class="tab" data-view="details" role="tab" aria-selected="false">Step Details</button>
+            </div>
+            <div class="badge-row">
+              <div class="badge"><span class="dot"></span> Stateful workflow</div>
+              <div class="badge"><span class="dot" style="background: var(--warn); box-shadow: 0 0 12px var(--warn);"></span> Dedup highlighted</div>
+              <div class="badge"><span class="dot" style="background: var(--accent-3); box-shadow: 0 0 12px var(--accent-3);"></span> Partial failure supported</div>
+            </div>
+          </div>
+
+          <section class="view active" id="view-overview">
+            <div class="diagram-shell">
+              <div class="mermaid">
+flowchart TD
+    classDef event fill:#14244a,stroke:#6e8bff,stroke-width:1.6px,color:#eaf0ff;
+    classDef io fill:#11192f,stroke:#36528d,stroke-width:1.4px,color:#dfe8ff;
+    classDef dedup fill:#2c2411,stroke:#ffd479,stroke-width:3px,color:#fff2cf;
+    classDef terminal fill:#102a26,stroke:#7dffd3,stroke-width:2px,color:#e7fff6;
+    classDef branch fill:#161d35,stroke:#6f86ff,stroke-width:1.4px,color:#eef3ff;
+
+    A[ExtractionWorkflow.run(documentId)] --> B[Load document from Prisma]
+    B --> C[Load entity types + fact types from CatalogService]
+    C --> D[createExtractionWorkflow()]
+    D --> E[workflow.createContext(state)]
+    E --> F[startExtractionEvent]
+
+    F --> G[Step 1<br/>parseDocument]
+    G --> H[documentParsedEvent]
+    H --> I[Step 2<br/>chunkDocument + compute expectedResultCount]
+    I --> J[Fan-out extractionTaskEvent for each<br/>chunk × entity type × fact type]
+
+    J --> K[Step 3a<br/>extractEntityType]
+    J --> L[Step 3b<br/>extractFactType]
+    K --> M[extractionResultEvent]
+    L --> M
+
+    M --> N[Step 4<br/>append to state.collectedResults]
+    N --> O{All results collected?}
+    O -- no --> N
+    O -- yes --> P[extractionCollectedEvent<br/>entities + facts + failures]
+
+    P --> Q[Step 5<br/>deduplicateEntities(entities)]
+    Q --> R[dedupCompleteEvent]
+    R --> S[Step 6<br/>persistResults(deduped entities, raw facts)]
+    S --> T{Any failures?}
+    T -- yes --> U[Update document status = partial]
+    T -- no --> V[Skip partial update]
+    U --> W[extractionCompleteEvent]
+    V --> W
+    W --> X[ctx.stream.untilEvent(extractionCompleteEvent)]
+
+    class F,H,M,P,R event;
+    class A,B,C,D,E,G,I,K,L,N,S,X io;
+    class Q dedup;
+    class W terminal;
+    class O,T branch;
+              </div>
+            </div>
+
+            <div class="spotlight">
+              <h3>Deduplication spotlight</h3>
+              <p>
+                Yes — the workflow has a real deduplication phase. It occurs in its own handler:
+                <code>extractionCollectedEvent → deduplicateEntities(entities) → dedupCompleteEvent</code>.
+                Only <strong>entities</strong> are deduplicated; <strong>facts</strong> pass through unchanged.
+              </p>
+              <button class="ghost-btn" id="jump-dedup">Jump to the dedup step</button>
+            </div>
+          </section>
+
+          <section class="view" id="view-events">
+            <div class="diagram-shell">
+              <div class="mermaid">
+flowchart LR
+    classDef event fill:#14244a,stroke:#6e8bff,stroke-width:1.8px,color:#eaf0ff;
+    classDef dedup fill:#2c2411,stroke:#ffd479,stroke-width:2.8px,color:#fff2cf;
+    classDef terminal fill:#102a26,stroke:#7dffd3,stroke-width:2px,color:#e7fff6;
+
+    SE[startExtractionEvent] --> DP[documentParsedEvent]
+    DP --> ET[extractionTaskEvent]
+    ET --> ER[extractionResultEvent]
+    ER --> EC[extractionCollectedEvent]
+    EC --> DC[dedupCompleteEvent]
+    DC --> DONE[extractionCompleteEvent]
+
+    class SE,DP,ET,ER,EC event;
+    class DC dedup;
+    class DONE terminal;
+              </div>
+            </div>
+
+            <div class="notes-grid" style="margin-top: 18px;">
+              <div class="note-card">
+                <h3>Event chain</h3>
+                <p>The workflow is event-driven throughout. Each handler consumes one event and emits the next event in the chain.</p>
+              </div>
+              <div class="note-card">
+                <h3>Unused event</h3>
+                <p><code>chunkReadyEvent</code> is defined in <code>workflow-events.ts</code> but is not currently used by <code>create-extraction-workflow.ts</code>.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" id="view-fanin">
+            <div class="diagram-shell">
+              <div class="mermaid">
+flowchart TD
+    classDef event fill:#14244a,stroke:#6e8bff,stroke-width:1.6px,color:#eaf0ff;
+    classDef task fill:#101a31,stroke:#35518c,stroke-width:1.4px,color:#eaf0ff;
+    classDef state fill:#0f2331,stroke:#60d0ff,stroke-width:1.8px,color:#dff8ff;
+    classDef dedup fill:#2c2411,stroke:#ffd479,stroke-width:2.8px,color:#fff2cf;
+
+    A[documentParsedEvent] --> B[chunkDocument]
+    B --> C1[Chunk 1]
+    B --> C2[Chunk 2]
+    B --> C3[Chunk N]
+
+    C1 --> D11[Entity type A task]
+    C1 --> D12[Entity type B task]
+    C1 --> D13[Fact type X task]
+    C2 --> D21[Entity type A task]
+    C2 --> D22[Fact type X task]
+    C3 --> D31[... more tasks ...]
+
+    D11 --> E[extractionResultEvent]
+    D12 --> E
+    D13 --> E
+    D21 --> E
+    D22 --> E
+    D31 --> E
+
+    E --> F[Push into state.collectedResults]
+    F --> G{collectedResults.length == expectedResultCount?}
+    G -- no --> F
+    G -- yes --> H[Aggregate entities + facts + failures]
+    H --> I[extractionCollectedEvent]
+    I --> J[deduplicateEntities(entities)]
+
+    class A,E,I event;
+    class D11,D12,D13,D21,D22,D31,C1,C2,C3,B task;
+    class F,G,H state;
+    class J dedup;
+              </div>
+            </div>
+
+            <div class="sim-card">
+              <h3>Interactive fan-out simulator</h3>
+              <p class="sim-help">Adjust the counts below to preview how the workflow computes <code>expectedResultCount</code> and why any non-zero failures lead to a <code>partial</code> final document status.</p>
+              <div class="simulator-grid">
+                <div class="range-row">
+                  <label class="range-label">
+                    <div class="range-head"><span>Chunks</span><strong id="chunks-value">3</strong></div>
+                    <input id="chunks-input" type="range" min="1" max="12" value="3" />
+                  </label>
+                  <label class="range-label">
+                    <div class="range-head"><span>Entity types</span><strong id="entities-value">4</strong></div>
+                    <input id="entities-input" type="range" min="1" max="10" value="4" />
+                  </label>
+                  <label class="range-label">
+                    <div class="range-head"><span>Fact types</span><strong id="facts-value">3</strong></div>
+                    <input id="facts-input" type="range" min="1" max="10" value="3" />
+                  </label>
+                  <label class="range-label">
+                    <div class="range-head"><span>Failed extraction tasks</span><strong id="failures-value">2</strong></div>
+                    <input id="failures-input" type="range" min="0" max="21" value="2" />
+                  </label>
+                </div>
+
+                <div>
+                  <div class="sim-metrics">
+                    <div class="sim-metric">
+                      <span>Total task events</span>
+                      <strong id="metric-total">21</strong>
+                    </div>
+                    <div class="sim-metric">
+                      <span>Successful results</span>
+                      <strong id="metric-success">19</strong>
+                    </div>
+                    <div class="sim-metric">
+                      <span>Failed results</span>
+                      <strong id="metric-failed">2</strong>
+                    </div>
+                    <div class="sim-metric">
+                      <span>Dedup runs?</span>
+                      <strong id="metric-dedup">Yes</strong>
+                    </div>
+                  </div>
+
+                  <div class="status-pill" id="status-pill" data-status="partial">Final document status: partial</div>
+                  <div class="formula" id="formula-output">expectedResultCount = 3 × (4 + 3) = 21</div>
+                  <p class="sim-meta" id="sim-meta">Even with failures, successful entities and facts can still be aggregated, deduplicated, and persisted.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" id="view-details">
+            <div class="steps-panel">
+              <article class="step-detail active" id="step-1">
+                <h3>Step 1 · Parse document</h3>
+                <p>The workflow starts from <code>startExtractionEvent</code> and calls <code>parseDocument(filePath, mimeType)</code> inside <code>withRetry(...)</code>. Success emits <code>documentParsedEvent</code>.</p>
+                <div class="detail-grid">
+                  <div class="mini">
+                    <h4>Input / output</h4>
+                    <ul>
+                      <li><strong>Consumes:</strong> <code>startExtractionEvent</code></li>
+                      <li><strong>Calls:</strong> <code>parseDocument</code></li>
+                      <li><strong>Emits:</strong> <code>documentParsedEvent</code></li>
+                    </ul>
+                  </div>
+                  <div class="mini">
+                    <h4>Why it matters</h4>
+                    <p>Normalizes the source document into parsed text before chunking and extraction begin.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="step-detail" id="step-2">
+                <h3>Step 2 · Chunk document and fan out tasks</h3>
+                <p>When <code>documentParsedEvent</code> arrives, the workflow runs <code>chunkDocument(fullText, documentId)</code>, computes <code>expectedResultCount</code>, resets <code>collectedResults</code>, and emits one <code>extractionTaskEvent</code> per chunk/type combination.</p>
+                <div class="detail-grid">
+                  <div class="mini">
+                    <h4>State mutation</h4>
+                    <ul>
+                      <li><code>state.expectedResultCount = chunks × (entityTypes + factTypes)</code></li>
+                      <li><code>state.collectedResults = []</code></li>
+                    </ul>
+                  </div>
+                  <div class="mini">
+                    <h4>Emitted tasks</h4>
+                    <p>Each task contains <code>chunk</code>, <code>typeName</code>, <code>typePrompt</code>, and <code>kind</code> (<code>entity</code> or <code>fact</code>).</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="step-detail" id="step-3">
+                <h3>Step 3 · Per-type extraction</h3>
+                <p>Every <code>extractionTaskEvent</code> routes into either <code>extractEntityType</code> or <code>extractFactType</code>. Even failures are converted into <code>extractionResultEvent</code> objects with an <code>error</code> field, so the workflow can continue.</p>
+                <div class="detail-grid">
+                  <div class="mini">
+                    <h4>Branches</h4>
+                    <ul>
+                      <li><code>kind === 'entity'</code> → <code>extractEntityType</code></li>
+                      <li><code>kind === 'fact'</code> → <code>extractFactType</code></li>
+                    </ul>
+                  </div>
+                  <div class="mini">
+                    <h4>Failure strategy</h4>
+                    <p>Task failures do not crash the workflow immediately; they become structured result events and are handled later.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="step-detail" id="step-4">
+                <h3>Step 4 · Fan-in collection via workflow state</h3>
+                <p>Each <code>extractionResultEvent</code> is pushed into <code>state.collectedResults</code>. Once the number of received results reaches <code>expectedResultCount</code>, the workflow aggregates successful entities, successful facts, and failures into <code>extractionCollectedEvent</code>.</p>
+                <div class="detail-grid">
+                  <div class="mini">
+                    <h4>Collected outputs</h4>
+                    <ul>
+                      <li><code>entities[]</code></li>
+                      <li><code>facts[]</code></li>
+                      <li><code>failures[]</code></li>
+                    </ul>
+                  </div>
+                  <div class="mini">
+                    <h4>Key pattern</h4>
+                    <p>This is the fan-in mechanism: state accumulation instead of a dedicated <code>collectEvents</code> helper.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="step-detail step-dedup" id="step-5">
+                <h3>Step 5 · Deduplicate entities</h3>
+                <p>This is the explicit deduplication handler. It consumes <code>extractionCollectedEvent</code>, runs <code>deduplicateEntities(entities)</code>, and emits <code>dedupCompleteEvent</code>.</p>
+                <div class="detail-grid">
+                  <div class="mini">
+                    <h4>Exactly what is deduplicated?</h4>
+                    <ul>
+                      <li><strong>Deduplicated:</strong> entities</li>
+                      <li><strong>Not deduplicated:</strong> facts</li>
+                    </ul>
+                  </div>
+                  <div class="mini">
+                    <h4>Outcome</h4>
+                    <p>The next step receives deduped entities, unchanged facts, and any failures collected earlier.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="step-detail" id="step-6">
+                <h3>Step 6 · Persist results and optionally mark partial</h3>
+                <p>The workflow persists results with <code>persistResults(prisma, documentId, entities, facts)</code> inside <code>withRetry(...)</code>. If failures exist, it updates the document row to <code>status: 'partial'</code> with a summarized error string, then emits <code>extractionCompleteEvent</code>.</p>
+                <div class="detail-grid">
+                  <div class="mini">
+                    <h4>Persistence behavior</h4>
+                    <ul>
+                      <li>Successful partial output is still persisted.</li>
+                      <li>Retries are used around persistence.</li>
+                    </ul>
+                  </div>
+                  <div class="mini">
+                    <h4>Completion</h4>
+                    <p><code>ExtractionWorkflow.run()</code> waits on <code>ctx.stream.untilEvent(extractionCompleteEvent)</code> before returning.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <div class="footer-note">
+            Tips: use the stage map, quick explorer, or arrow keys to navigate. The fan-out simulator lets you test how <code>expectedResultCount</code> scales with chunks and extraction types.
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+      const mermaid = window.__mermaid;
+      await mermaid.run({ querySelector: '.mermaid' });
+
+      const stepMeta = [
+        {
+          id: 'step-1',
+          index: 1,
+          title: 'Parse document',
+          summary: 'Consume startExtractionEvent, parse the uploaded file with retry, and emit documentParsedEvent.',
+          consumes: 'startExtractionEvent',
+          emits: 'documentParsedEvent',
+          state: 'No workflow state mutation',
+          failure: 'Parsing is retried before bubbling',
+          note: 'This is the entry point into the text-processing pipeline.',
+        },
+        {
+          id: 'step-2',
+          index: 2,
+          title: 'Chunk + fan-out tasks',
+          summary: 'Chunk the parsed text, compute expectedResultCount, reset collectedResults, and emit one extractionTaskEvent per chunk/type pair.',
+          consumes: 'documentParsedEvent',
+          emits: 'extractionTaskEvent × N',
+          state: 'Sets expectedResultCount and clears collectedResults',
+          failure: 'No task failures yet; this stage prepares fan-out',
+          note: 'This is where concurrency explodes into chunk × entity/fact type work.',
+        },
+        {
+          id: 'step-3',
+          index: 3,
+          title: 'Per-type extraction',
+          summary: 'Route each task to extractEntityType or extractFactType and always convert the outcome into extractionResultEvent.',
+          consumes: 'extractionTaskEvent',
+          emits: 'extractionResultEvent',
+          state: 'No direct workflow state mutation',
+          failure: 'Errors become result events with an error field',
+          note: 'The workflow keeps moving even when individual extraction tasks fail.',
+        },
+        {
+          id: 'step-4',
+          index: 4,
+          title: 'Fan-in collection',
+          summary: 'Append results into state.collectedResults until the count reaches expectedResultCount, then aggregate entities, facts, and failures.',
+          consumes: 'extractionResultEvent',
+          emits: 'extractionCollectedEvent',
+          state: 'Pushes into collectedResults and checks expectedResultCount',
+          failure: 'Failures are accumulated instead of short-circuiting the run',
+          note: 'This is the stateful fan-in pattern used instead of a collectEvents helper.',
+        },
+        {
+          id: 'step-5',
+          index: 5,
+          title: 'Deduplicate entities',
+          summary: 'Consume extractionCollectedEvent, run deduplicateEntities(entities), and emit dedupCompleteEvent.',
+          consumes: 'extractionCollectedEvent',
+          emits: 'dedupCompleteEvent',
+          state: 'No workflow state mutation; transforms entity payload',
+          failure: 'Only entities are deduplicated, facts stay untouched',
+          note: 'This is a real standalone workflow step, not just an implementation detail.',
+        },
+        {
+          id: 'step-6',
+          index: 6,
+          title: 'Persist + mark partial',
+          summary: 'Persist deduped entities and raw facts, update the document to partial if failures exist, then emit extractionCompleteEvent.',
+          consumes: 'dedupCompleteEvent',
+          emits: 'extractionCompleteEvent',
+          state: 'May update Prisma document status to partial',
+          failure: 'Persistence is retried; partial is set when failures[] is non-empty',
+          note: 'ExtractionWorkflow.run() waits for this completion signal before returning.',
+        },
+      ];
+
+      const stepIds = stepMeta.map((step) => step.id);
+      let currentStepId = 'step-1';
+      let tourTimer = null;
+
+      const tabs = [...document.querySelectorAll('.tab')];
+      const views = [...document.querySelectorAll('.view')];
+      const stepTriggers = [...document.querySelectorAll('.step-trigger')];
+      const stepDetails = [...document.querySelectorAll('.step-detail')];
+      const toast = document.getElementById('toast');
+      const playTourButton = document.getElementById('play-tour');
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      async function copyText(text) {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+          }
+        } catch {
+          // fall through
+        }
+
+        try {
+          const area = document.createElement('textarea');
+          area.value = text;
+          area.style.position = 'fixed';
+          area.style.opacity = '0';
+          document.body.appendChild(area);
+          area.focus();
+          area.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(area);
+          return ok;
+        } catch {
+          return false;
+        }
+      }
+
+      function setActiveView(viewName) {
+        tabs.forEach((tab) => {
+          const active = tab.dataset.view === viewName;
+          tab.classList.toggle('active', active);
+          tab.setAttribute('aria-selected', String(active));
+        });
+        views.forEach((view) => view.classList.toggle('active', view.id === `view-${viewName}`));
+      }
+
+      function updateFocusPanel(step) {
+        document.getElementById('focus-title').textContent = `Step ${step.index} · ${step.title}`;
+        document.getElementById('focus-summary').innerHTML = step.summary
+          .replaceAll('startExtractionEvent', '<code>startExtractionEvent</code>')
+          .replaceAll('documentParsedEvent', '<code>documentParsedEvent</code>')
+          .replaceAll('expectedResultCount', '<code>expectedResultCount</code>')
+          .replaceAll('collectedResults', '<code>collectedResults</code>')
+          .replaceAll('extractionTaskEvent', '<code>extractionTaskEvent</code>')
+          .replaceAll('extractEntityType', '<code>extractEntityType</code>')
+          .replaceAll('extractFactType', '<code>extractFactType</code>')
+          .replaceAll('extractionResultEvent', '<code>extractionResultEvent</code>')
+          .replaceAll('extractionCollectedEvent', '<code>extractionCollectedEvent</code>')
+          .replaceAll('deduplicateEntities(entities)', '<code>deduplicateEntities(entities)</code>')
+          .replaceAll('dedupCompleteEvent', '<code>dedupCompleteEvent</code>')
+          .replaceAll('extractionCompleteEvent', '<code>extractionCompleteEvent</code>');
+        document.getElementById('focus-consumes').textContent = step.consumes;
+        document.getElementById('focus-emits').textContent = step.emits;
+        document.getElementById('focus-state').textContent = step.state;
+        document.getElementById('focus-failure').textContent = step.failure;
+        document.getElementById('focus-note').textContent = step.note;
+      }
+
+      function focusStep(stepId, options = {}) {
+        const { switchToDetails = false } = options;
+        const step = stepMeta.find((item) => item.id === stepId);
+        if (!step) return;
+        currentStepId = step.id;
+
+        stepTriggers.forEach((trigger) => {
+          trigger.classList.toggle('active', trigger.dataset.step === step.id);
+        });
+
+        stepDetails.forEach((detail) => detail.classList.toggle('active', detail.id === step.id));
+        updateFocusPanel(step);
+
+        if (switchToDetails) {
+          setActiveView('details');
+        }
+      }
+
+      function currentStepIndex() {
+        return stepIds.indexOf(currentStepId);
+      }
+
+      function moveStep(delta, options = {}) {
+        const nextIndex = (currentStepIndex() + delta + stepIds.length) % stepIds.length;
+        focusStep(stepIds[nextIndex], options);
+      }
+
+      function stopTour() {
+        if (tourTimer) {
+          clearInterval(tourTimer);
+          tourTimer = null;
+        }
+        playTourButton.textContent = '▶ Play tour';
+        playTourButton.setAttribute('aria-pressed', 'false');
+      }
+
+      function startTour() {
+        stopTour();
+        setActiveView('details');
+        playTourButton.textContent = '⏸ Pause tour';
+        playTourButton.setAttribute('aria-pressed', 'true');
+        tourTimer = setInterval(() => moveStep(1, { switchToDetails: true }), 2400);
+      }
+
+      document.getElementById('prev-step').addEventListener('click', () => moveStep(-1));
+      document.getElementById('next-step').addEventListener('click', () => moveStep(1));
+      playTourButton.addEventListener('click', () => {
+        if (tourTimer) stopTour();
+        else startTour();
+      });
+
+      document.getElementById('jump-dedup').addEventListener('click', () => {
+        focusStep('step-5', { switchToDetails: true });
+      });
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => setActiveView(tab.dataset.view));
+      });
+
+      stepTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+          const switchToDetails = trigger.classList.contains('step-btn');
+          focusStep(trigger.dataset.step, { switchToDetails });
+        });
+      });
+
+      document.addEventListener('keydown', (event) => {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (event.key === 'ArrowRight') {
+          moveStep(1);
+        } else if (event.key === 'ArrowLeft') {
+          moveStep(-1);
+        }
+      });
+
+      document.querySelectorAll('[data-copy]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const ok = await copyText(button.dataset.copy);
+          showToast(ok ? `Copied: ${button.dataset.copy}` : 'Copy failed');
+        });
+      });
+
+      const chunksInput = document.getElementById('chunks-input');
+      const entitiesInput = document.getElementById('entities-input');
+      const factsInput = document.getElementById('facts-input');
+      const failuresInput = document.getElementById('failures-input');
+
+      function updateSimulator() {
+        const chunks = Number(chunksInput.value);
+        const entities = Number(entitiesInput.value);
+        const facts = Number(factsInput.value);
+        const total = chunks * (entities + facts);
+
+        failuresInput.max = String(total);
+        if (Number(failuresInput.value) > total) failuresInput.value = String(total);
+        const failures = Number(failuresInput.value);
+        const successes = Math.max(total - failures, 0);
+        const status = failures > 0 ? 'partial' : 'done';
+
+        document.getElementById('chunks-value').textContent = String(chunks);
+        document.getElementById('entities-value').textContent = String(entities);
+        document.getElementById('facts-value').textContent = String(facts);
+        document.getElementById('failures-value').textContent = String(failures);
+
+        document.getElementById('metric-total').textContent = String(total);
+        document.getElementById('metric-success').textContent = String(successes);
+        document.getElementById('metric-failed').textContent = String(failures);
+        document.getElementById('metric-dedup').textContent = successes > 0 ? 'Yes' : 'No successful entities';
+
+        const statusPill = document.getElementById('status-pill');
+        statusPill.dataset.status = status;
+        statusPill.textContent = `Final document status: ${status}`;
+
+        document.getElementById('formula-output').textContent = `expectedResultCount = ${chunks} × (${entities} + ${facts}) = ${total}`;
+        document.getElementById('sim-meta').textContent = failures > 0
+          ? 'Because at least one extraction task failed, the workflow can still persist successful output, but the document ends with status partial.'
+          : 'With zero failed extraction tasks, the workflow can complete cleanly without setting the document to partial.';
+      }
+
+      [chunksInput, entitiesInput, factsInput, failuresInput].forEach((input) => {
+        input.addEventListener('input', updateSimulator);
+      });
+
+      focusStep('step-1');
+      updateSimulator();
+    </script>
+  </body>
+</html>
