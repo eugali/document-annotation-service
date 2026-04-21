@@ -18,7 +18,20 @@ describe('extractEntityType', () => {
         {
           message: {
             content: JSON.stringify({
-              entities: [{ name: 'Bob Smith' }, { name: 'Jane Doe' }],
+              entities: [
+                {
+                  name: 'Bob Smith',
+                  sourceSnippet: 'Bob Smith met Jane Doe at the conference.',
+                  sourcePage: null,
+                  sourceCell: null,
+                },
+                {
+                  name: 'Jane Doe',
+                  sourceSnippet: 'Bob Smith met Jane Doe at the conference.',
+                  sourcePage: null,
+                  sourceCell: null,
+                },
+              ],
             }),
           },
         },
@@ -31,8 +44,22 @@ describe('extractEntityType', () => {
     );
 
     expect(result).toEqual([
-      { typeName: 'person', name: 'Bob Smith' },
-      { typeName: 'person', name: 'Jane Doe' },
+      {
+        typeName: 'person',
+        name: 'Bob Smith',
+        sourceSnippet: 'Bob Smith met Jane Doe at the conference.',
+        sourcePage: undefined,
+        sourceCell: undefined,
+        chunkIndex: 0,
+      },
+      {
+        typeName: 'person',
+        name: 'Jane Doe',
+        sourceSnippet: 'Bob Smith met Jane Doe at the conference.',
+        sourcePage: undefined,
+        sourceCell: undefined,
+        chunkIndex: 0,
+      },
     ]);
 
     expect(mockCreate).toHaveBeenCalledWith(
@@ -70,7 +97,20 @@ describe('extractEntityType', () => {
         {
           message: {
             content: JSON.stringify({
-              entities: [{ name: '' }, { name: 'Valid Name' }],
+              entities: [
+                {
+                  name: '',
+                  sourceSnippet: 'some text',
+                  sourcePage: null,
+                  sourceCell: null,
+                },
+                {
+                  name: 'Valid Name',
+                  sourceSnippet: 'Valid Name appears here.',
+                  sourcePage: null,
+                  sourceCell: null,
+                },
+              ],
             }),
           },
         },
@@ -82,6 +122,53 @@ describe('extractEntityType', () => {
       prompt: 'Extract names.',
     });
 
-    expect(result).toEqual([{ typeName: 'person', name: 'Valid Name' }]);
+    expect(result).toEqual([
+      {
+        typeName: 'person',
+        name: 'Valid Name',
+        sourceSnippet: 'Valid Name appears here.',
+        sourcePage: undefined,
+        sourceCell: undefined,
+        chunkIndex: 0,
+      },
+    ]);
+  });
+
+  it('returns sourceSnippet and sourcePage for each entity', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              entities: [
+                {
+                  name: 'Bob Smith',
+                  sourceSnippet:
+                    'Bob Smith signed the contract on page 3.',
+                  sourcePage: 3,
+                  sourceCell: null,
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const result = await extractEntityType(
+      'Bob Smith signed the contract on page 3.',
+      { name: 'person', prompt: 'Extract full names of individuals.' },
+    );
+
+    expect(result).toEqual([
+      {
+        typeName: 'person',
+        name: 'Bob Smith',
+        sourceSnippet: 'Bob Smith signed the contract on page 3.',
+        sourcePage: 3,
+        sourceCell: undefined,
+        chunkIndex: 0,
+      },
+    ]);
   });
 });
