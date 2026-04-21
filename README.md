@@ -2,6 +2,14 @@
 
 A service that extracts structured entities and facts from documents using AI. Upload files, define what to extract via a configurable catalog, and let a background pipeline chunk, analyze, and link results automatically.
 
+## Project Showcase
+
+- The idea of parsing a document as a series of interconnected and customizable Facts and Entities
+- The usage of the Map Reduce pattern with LlamaIndex Workflows and a dynamic number of steps based on the chunks
+- The usage of a simple yet effective and future-proof tech stack
+- The usage of my experimental combination of OpenSpec and Superpowers (Spec Driven Development plugins)
+- The definition of a basic UX/UI part to make the system usable and intuitive from the first step
+
 ## Features
 
 - **Multi-format document ingestion** — PDF, DOCX, XLSX, XLS, CSV with page/cell reference tracking
