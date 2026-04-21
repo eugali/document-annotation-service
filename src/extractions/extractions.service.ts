@@ -6,13 +6,19 @@ export class ExtractionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getGroupedExtractions() {
-    const [entityTypes, factTypes] = await Promise.all([
+    const [entityTypes, factTypes, documents] = await Promise.all([
       this.prisma.entityType.findMany({
         include: {
           entities: {
             include: {
               documents: {
-                include: { document: { select: { id: true, filename: true } } },
+                include: {
+                  document: { select: { id: true, filename: true } },
+                },
+              },
+              sources: true,
+              facts: {
+                include: { fact: { select: { id: true } } },
               },
             },
           },
@@ -23,11 +29,21 @@ export class ExtractionsService {
           facts: {
             include: {
               documents: {
-                include: { document: { select: { id: true, filename: true } } },
+                include: {
+                  document: { select: { id: true, filename: true } },
+                },
+              },
+              entities: {
+                include: {
+                  entity: { select: { id: true, name: true } },
+                },
               },
             },
           },
         },
+      }),
+      this.prisma.document.findMany({
+        select: { id: true, filename: true, status: true },
       }),
     ]);
 
@@ -42,6 +58,13 @@ export class ExtractionsService {
             id: de.document.id,
             filename: de.document.filename,
           })),
+          sources: e.sources.map((s) => ({
+            snippet: s.snippet,
+            page: s.page,
+            cell: s.cell,
+            chunkIndex: s.chunkIndex,
+          })),
+          linkedFactIds: e.facts.map((fe) => fe.fact.id),
         })),
       }));
 
@@ -52,13 +75,20 @@ export class ExtractionsService {
         items: ft.facts.map((f) => ({
           id: f.id,
           value: f.value,
+          sourceSnippet: f.sourceSnippet,
+          sourcePage: f.sourcePage,
+          sourceCell: f.sourceCell,
           documents: f.documents.map((df) => ({
             id: df.document.id,
             filename: df.document.filename,
           })),
+          linkedEntities: f.entities.map((fe) => ({
+            id: fe.entity.id,
+            name: fe.entity.name,
+          })),
         })),
       }));
 
-    return { entities, facts };
+    return { entities, facts, documents };
   }
 }

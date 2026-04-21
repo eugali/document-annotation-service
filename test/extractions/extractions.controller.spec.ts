@@ -25,6 +25,8 @@ describe('ExtractionsController', () => {
   });
 
   beforeEach(async () => {
+    await prisma.factEntity.deleteMany();
+    await prisma.entitySource.deleteMany();
     await prisma.documentEntity.deleteMany();
     await prisma.documentFact.deleteMany();
     await prisma.entity.deleteMany();
@@ -40,7 +42,7 @@ describe('ExtractionsController', () => {
         .get('/extractions')
         .expect(200);
 
-      expect(response.body).toEqual({ entities: [], facts: [] });
+      expect(response.body).toEqual({ entities: [], facts: [], documents: [] });
     });
 
     it('returns entities grouped by type with document links', async () => {
@@ -74,6 +76,8 @@ describe('ExtractionsController', () => {
       expect(response.body.entities[0].items[0].documents).toEqual([
         { id: 'doc-ext-1', filename: 'test.pdf' },
       ]);
+      expect(response.body.entities[0].items[0].sources).toEqual([]);
+      expect(response.body.entities[0].items[0].linkedFactIds).toEqual([]);
     });
 
     it('returns facts grouped by type with document links', async () => {
@@ -105,6 +109,95 @@ describe('ExtractionsController', () => {
       expect(response.body.facts[0].items[0].value).toBe('50000 EUR');
       expect(response.body.facts[0].items[0].documents).toEqual([
         { id: 'doc-ext-2', filename: 'invoice.pdf' },
+      ]);
+      expect(response.body.facts[0].items[0].sourceSnippet).toBe('');
+      expect(response.body.facts[0].items[0].sourcePage).toBeNull();
+      expect(response.body.facts[0].items[0].sourceCell).toBeNull();
+      expect(response.body.facts[0].items[0].linkedEntities).toEqual([]);
+    });
+
+    it('returns enriched entity data with sources and linked fact IDs', async () => {
+      const et = await prisma.entityType.create({
+        data: { name: 'person', description: 'A person', prompt: 'p' },
+      });
+      const ft = await prisma.factType.create({
+        data: {
+          name: 'monetary_amount',
+          description: 'Money',
+          prompt: 'p',
+        },
+      });
+      const doc = await prisma.document.create({
+        data: {
+          id: 'doc-enrich-1',
+          filename: 'contract.pdf',
+          mimeType: 'application/pdf',
+          filePath: '/tmp/c.pdf',
+          status: 'done',
+        },
+      });
+      const entity = await prisma.entity.create({
+        data: { name: 'John Doe', entityTypeId: et.id },
+      });
+      await prisma.documentEntity.create({
+        data: { documentId: doc.id, entityId: entity.id },
+      });
+      await prisma.entitySource.create({
+        data: {
+          entityId: entity.id,
+          snippet: 'John Doe on page 2',
+          page: 2,
+          chunkIndex: 0,
+        },
+      });
+
+      const fact = await prisma.fact.create({
+        data: {
+          factTypeId: ft.id,
+          value: '$150,000',
+          sourceSnippet: "John Doe's salary is $150,000",
+          sourcePage: 5,
+        },
+      });
+      await prisma.documentFact.create({
+        data: { documentId: doc.id, factId: fact.id },
+      });
+      await prisma.factEntity.create({
+        data: { factId: fact.id, entityId: entity.id },
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/extractions')
+        .expect(200);
+
+      // Entities include sources and linkedFactIds
+      expect(response.body.entities[0].items[0].sources).toEqual([
+        expect.objectContaining({
+          snippet: 'John Doe on page 2',
+          page: 2,
+          chunkIndex: 0,
+        }),
+      ]);
+      expect(response.body.entities[0].items[0].linkedFactIds).toContain(
+        fact.id,
+      );
+
+      // Facts include source fields and linkedEntities
+      expect(response.body.facts[0].items[0].sourceSnippet).toBe(
+        "John Doe's salary is $150,000",
+      );
+      expect(response.body.facts[0].items[0].sourcePage).toBe(5);
+      expect(response.body.facts[0].items[0].linkedEntities).toEqual([
+        expect.objectContaining({ id: entity.id, name: 'John Doe' }),
+      ]);
+
+      // Documents top-level
+      expect(response.body.documents).toEqual([
+        expect.objectContaining({
+          id: 'doc-enrich-1',
+          filename: 'contract.pdf',
+          status: 'done',
+        }),
       ]);
     });
   });
