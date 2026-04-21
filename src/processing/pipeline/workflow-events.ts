@@ -3,8 +3,10 @@ import {
   ParsedDocument,
   DocumentChunk,
   ExtractionTaskResult,
+  ExtractedEntity,
   DedupedEntity,
   ExtractedFact,
+  LinkingResult,
 } from './pipeline.types';
 
 export interface StartExtractionData {
@@ -21,14 +23,22 @@ export interface ExtractionTaskData {
 }
 
 export interface ExtractionCollectedData {
-  entities: { typeName: string; name: string }[];
-  facts: { typeName: string; value: string }[];
+  entities: ExtractedEntity[];
+  facts: ExtractedFact[];
+  failures: { chunkIndex: number; typeName: string; kind: string; error: string }[];
+}
+
+export interface LinkingCompleteData {
+  entities: DedupedEntity[];
+  facts: ExtractedFact[];
+  links: LinkingResult[];
   failures: { chunkIndex: number; typeName: string; kind: string; error: string }[];
 }
 
 export interface PersistData {
   entities: DedupedEntity[];
   facts: ExtractedFact[];
+  links: LinkingResult[];
   failures: { chunkIndex: number; typeName: string; kind: string; error: string }[];
 }
 
@@ -58,6 +68,10 @@ export const extractionCollectedEvent = workflowEvent<ExtractionCollectedData>({
 
 export const dedupCompleteEvent = workflowEvent<PersistData>({
   debugLabel: 'dedupComplete',
+});
+
+export const linkingCompleteEvent = workflowEvent<LinkingCompleteData>({
+  debugLabel: 'linkingComplete',
 });
 
 export const extractionCompleteEvent = workflowEvent<void>({

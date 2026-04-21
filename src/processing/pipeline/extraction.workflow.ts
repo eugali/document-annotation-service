@@ -33,6 +33,7 @@ export class ExtractionWorkflow {
       name: ft.name,
       description: ft.description,
       prompt: ft.prompt,
+      entityLinkHint: ft.entityLinkHint ?? undefined,
     }));
 
     const workflow = createExtractionWorkflow();

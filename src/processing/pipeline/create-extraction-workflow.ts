@@ -13,6 +13,7 @@ import {
   extractionResultEvent,
   extractionCollectedEvent,
   dedupCompleteEvent,
+  linkingCompleteEvent,
   extractionCompleteEvent,
 } from './workflow-events';
 import { parseDocument } from './steps/parse-document.step';
@@ -20,6 +21,7 @@ import { chunkDocument } from './steps/chunk-document.step';
 import { extractEntityType } from './steps/extract-entities.step';
 import { extractFactType } from './steps/extract-facts.step';
 import { deduplicateEntities } from './steps/dedup-entities.step';
+import { linkFactsToEntities } from './steps/link-facts-to-entities.step';
 import { persistResults } from './steps/persist-results.step';
 import { withRetry } from '../../shared/with-retry';
 
@@ -27,7 +29,7 @@ export interface ExtractionWorkflowState {
   documentId: string;
   prisma: PrismaService;
   entityTypes: { name: string; description: string; prompt: string }[];
-  factTypes: { name: string; description: string; prompt: string }[];
+  factTypes: { name: string; description: string; prompt: string; entityLinkHint?: string }[];
   expectedResultCount: number;
   collectedResults: ExtractionTaskResult[];
 }
@@ -93,7 +95,7 @@ export function createExtractionWorkflow() {
         const entities = await extractEntityType(chunk.text, {
           name: typeName,
           prompt: typePrompt,
-        });
+        }, chunk.chunkIndex);
         return extractionResultEvent.with({
           chunkIndex: chunk.chunkIndex,
           typeName,
@@ -167,17 +169,35 @@ export function createExtractionWorkflow() {
     return dedupCompleteEvent.with({
       entities: dedupedEntities,
       facts,
+      links: [],
       failures,
     });
   });
 
-  // Step 6: Persist results
+  // Step 6: Link facts to entities
   workflow.handle([dedupCompleteEvent], async (context, event) => {
     const { state } = context;
     const { entities, facts, failures } = event.data;
 
+    const hints: Record<string, string> = {};
+    for (const ft of state.factTypes) {
+      if (ft.entityLinkHint) {
+        hints[ft.name] = ft.entityLinkHint;
+      }
+    }
+
+    const links = await linkFactsToEntities(facts, entities, hints);
+
+    return linkingCompleteEvent.with({ entities, facts, links, failures });
+  });
+
+  // Step 7: Persist results
+  workflow.handle([linkingCompleteEvent], async (context, event) => {
+    const { state } = context;
+    const { entities, facts, links, failures } = event.data;
+
     await withRetry(
-      () => persistResults(state.prisma, state.documentId, entities, facts),
+      () => persistResults(state.prisma, state.documentId, entities, facts, links),
       { retries: 2, backoffMs: 500, backoffType: 'fixed' },
     );
 

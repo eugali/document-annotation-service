@@ -8,6 +8,7 @@ jest.mock('../../../src/processing/pipeline/steps/chunk-document.step');
 jest.mock('../../../src/processing/pipeline/steps/extract-entities.step');
 jest.mock('../../../src/processing/pipeline/steps/extract-facts.step');
 jest.mock('../../../src/processing/pipeline/steps/dedup-entities.step');
+jest.mock('../../../src/processing/pipeline/steps/link-facts-to-entities.step');
 jest.mock('../../../src/processing/pipeline/steps/persist-results.step');
 
 import { parseDocument } from '../../../src/processing/pipeline/steps/parse-document.step';
@@ -15,6 +16,7 @@ import { chunkDocument } from '../../../src/processing/pipeline/steps/chunk-docu
 import { extractEntityType } from '../../../src/processing/pipeline/steps/extract-entities.step';
 import { extractFactType } from '../../../src/processing/pipeline/steps/extract-facts.step';
 import { deduplicateEntities } from '../../../src/processing/pipeline/steps/dedup-entities.step';
+import { linkFactsToEntities } from '../../../src/processing/pipeline/steps/link-facts-to-entities.step';
 import { persistResults } from '../../../src/processing/pipeline/steps/persist-results.step';
 
 describe('ExtractionWorkflow', () => {
@@ -41,6 +43,7 @@ describe('ExtractionWorkflow', () => {
                 name: 'monetary_amount',
                 description: 'Money',
                 prompt: 'Extract explicit monetary values.',
+                entityLinkHint: 'Link to the person or organisation the amount relates to.',
               },
             ]),
           },
@@ -82,17 +85,19 @@ describe('ExtractionWorkflow', () => {
         text: 'test content',
       },
     ];
-    const mockEntities = [{ typeName: 'person', name: 'Bob' }];
-    const mockFacts = [{ typeName: 'monetary_amount', value: '$100' }];
+    const mockEntities = [{ typeName: 'person', name: 'Bob', sourceSnippet: 'Bob paid $100', chunkIndex: 0 }];
+    const mockFacts = [{ typeName: 'monetary_amount', value: '$100', sourceSnippet: 'Bob paid $100' }];
     const mockDeduped = [
-      { typeName: 'person', name: 'Bob', mergedFrom: ['Bob'] },
+      { typeName: 'person', name: 'Bob', mergedFrom: ['Bob'], sources: [{ snippet: 'Bob paid $100', chunkIndex: 0 }] },
     ];
+    const mockLinks = [{ factIndex: 0, entityNames: ['Bob'], entityTypes: ['person'] }];
 
     (parseDocument as jest.Mock).mockResolvedValue(mockParsed);
     (chunkDocument as jest.Mock).mockReturnValue(mockChunks);
     (extractEntityType as jest.Mock).mockResolvedValue(mockEntities);
     (extractFactType as jest.Mock).mockResolvedValue(mockFacts);
     (deduplicateEntities as jest.Mock).mockResolvedValue(mockDeduped);
+    (linkFactsToEntities as jest.Mock).mockResolvedValue(mockLinks);
     (persistResults as jest.Mock).mockResolvedValue(undefined);
 
     await workflow.run(doc.id);
@@ -105,17 +110,23 @@ describe('ExtractionWorkflow', () => {
     expect(extractEntityType).toHaveBeenCalledWith('test content', {
       name: 'person',
       prompt: 'Extract full names of individuals.',
-    });
+    }, 0);
     expect(extractFactType).toHaveBeenCalledWith('test content', {
       name: 'monetary_amount',
       prompt: 'Extract explicit monetary values.',
     });
     expect(deduplicateEntities).toHaveBeenCalledWith(mockEntities);
+    expect(linkFactsToEntities).toHaveBeenCalledWith(
+      mockFacts,
+      mockDeduped,
+      { monetary_amount: 'Link to the person or organisation the amount relates to.' },
+    );
     expect(persistResults).toHaveBeenCalledWith(
       expect.anything(),
       'wf-doc-1',
       mockDeduped,
       mockFacts,
+      mockLinks,
     );
   });
 
@@ -145,11 +156,12 @@ describe('ExtractionWorkflow', () => {
         text: 'chunk one',
       },
     ];
-    const mockEntities = [{ typeName: 'person', name: 'Alice' }];
-    const mockFacts = [{ typeName: 'monetary_amount', value: '$200' }];
+    const mockEntities = [{ typeName: 'person', name: 'Alice', sourceSnippet: 'Alice spent $200', chunkIndex: 0 }];
+    const mockFacts = [{ typeName: 'monetary_amount', value: '$200', sourceSnippet: 'Alice spent $200' }];
     const mockDeduped = [
-      { typeName: 'person', name: 'Alice', mergedFrom: ['Alice'] },
+      { typeName: 'person', name: 'Alice', mergedFrom: ['Alice'], sources: [{ snippet: 'Alice spent $200', chunkIndex: 0 }] },
     ];
+    const mockLinks = [{ factIndex: 0, entityNames: ['Alice'], entityTypes: ['person'] }];
 
     (parseDocument as jest.Mock).mockResolvedValue(mockParsed);
     (chunkDocument as jest.Mock).mockReturnValue(mockChunks);
@@ -163,6 +175,7 @@ describe('ExtractionWorkflow', () => {
     (extractFactType as jest.Mock).mockResolvedValue(mockFacts);
 
     (deduplicateEntities as jest.Mock).mockResolvedValue(mockDeduped);
+    (linkFactsToEntities as jest.Mock).mockResolvedValue(mockLinks);
 
     // persistResults must call through to the real prisma to check status,
     // but we mock it since the workflow mocks all steps
@@ -178,6 +191,7 @@ describe('ExtractionWorkflow', () => {
       expect.arrayContaining([
         expect.objectContaining({ typeName: 'monetary_amount', value: '$200' }),
       ]),
+      mockLinks,
     );
 
     // Verify the document status was set to partial

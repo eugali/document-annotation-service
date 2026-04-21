@@ -1,11 +1,12 @@
 import { PrismaService } from '../../../prisma/prisma.service';
-import { ExtractedEntity, ExtractedFact } from '../pipeline.types';
+import { ExtractedEntity, ExtractedFact, LinkingResult } from '../pipeline.types';
 
 export async function persistResults(
   prisma: PrismaService,
   documentId: string,
   entities: ExtractedEntity[],
   facts: ExtractedFact[],
+  _links: LinkingResult[] = [],
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     for (const entity of entities) {
