@@ -9,6 +9,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message || `HTTP ${res.status}`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -34,6 +35,7 @@ export interface CatalogType {
   name: string;
   description: string;
   prompt: string;
+  entityLinkHint?: string | null;
 }
 
 export interface Catalog {
@@ -41,21 +43,46 @@ export interface Catalog {
   factTypes: CatalogType[];
 }
 
+export interface EntitySource {
+  snippet: string;
+  page: number | null;
+  cell: string | null;
+  chunkIndex: number;
+}
+
 export interface ExtractionItem {
   id: string;
   name: string;
   documents: Array<{ id: string; filename: string }>;
+  sources: EntitySource[];
+  linkedFactIds: string[];
+}
+
+export interface LinkedEntity {
+  id: string;
+  name: string;
 }
 
 export interface FactItem {
   id: string;
   value: string;
+  sourceSnippet: string;
+  sourcePage: number | null;
+  sourceCell: string | null;
   documents: Array<{ id: string; filename: string }>;
+  linkedEntities: LinkedEntity[];
+}
+
+export interface GraphDocument {
+  id: string;
+  filename: string;
+  status: string;
 }
 
 export interface Extractions {
   entities: Array<{ type: string; items: ExtractionItem[] }>;
   facts: Array<{ type: string; items: FactItem[] }>;
+  documents: GraphDocument[];
 }
 
 export interface Job {
@@ -116,4 +143,20 @@ export function getJobs() {
 
 export function getJob(jobId: string) {
   return request<Job>(`/jobs/${jobId}`);
+}
+
+export function createEntityType(data: { name: string; description: string; prompt: string }) {
+  return request('/catalog/entity-types', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function deleteEntityType(id: string) {
+  return request(`/catalog/entity-types/${id}`, { method: 'DELETE' });
+}
+
+export function createFactType(data: { name: string; description: string; prompt: string; entityLinkHint?: string }) {
+  return request('/catalog/fact-types', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function deleteFactType(id: string) {
+  return request(`/catalog/fact-types/${id}`, { method: 'DELETE' });
 }
