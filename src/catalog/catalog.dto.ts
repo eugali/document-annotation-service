@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class UpdateCatalogTypeDto {
   @IsOptional()
@@ -8,4 +8,36 @@ export class UpdateCatalogTypeDto {
   @IsOptional()
   @IsString()
   prompt?: string;
+}
+
+export class CreateEntityTypeDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsString()
+  @IsNotEmpty()
+  prompt: string;
+}
+
+export class CreateFactTypeDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsString()
+  @IsNotEmpty()
+  prompt: string;
+
+  @IsOptional()
+  @IsString()
+  entityLinkHint?: string;
 }

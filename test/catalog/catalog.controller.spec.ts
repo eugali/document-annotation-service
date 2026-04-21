@@ -28,6 +28,8 @@ describe('CatalogController', () => {
   beforeEach(async () => {
     await prisma.documentEntity.deleteMany();
     await prisma.documentFact.deleteMany();
+    await prisma.factEntity.deleteMany();
+    await prisma.entitySource.deleteMany();
     await prisma.entity.deleteMany();
     await prisma.fact.deleteMany();
     await prisma.entityType.deleteMany();
@@ -99,6 +101,75 @@ describe('CatalogController', () => {
         .put('/catalog/fact-types/nonexistent')
         .send({ description: 'x', prompt: 'y' })
         .expect(404);
+    });
+  });
+
+  describe('POST /catalog/entity-types', () => {
+    it('creates a new entity type', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/catalog/entity-types')
+        .send({ name: 'vehicle', description: 'A vehicle', prompt: 'Extract vehicles.' })
+        .expect(201);
+      expect(response.body).toMatchObject({ name: 'vehicle', description: 'A vehicle', prompt: 'Extract vehicles.' });
+      expect(response.body.id).toBeDefined();
+    });
+
+    it('rejects duplicate name with 409', async () => {
+      await request(app.getHttpServer())
+        .post('/catalog/entity-types')
+        .send({ name: 'person', description: 'dup', prompt: 'dup' })
+        .expect(409);
+    });
+
+    it('rejects missing fields with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/catalog/entity-types')
+        .send({ name: 'incomplete' })
+        .expect(400);
+    });
+  });
+
+  describe('DELETE /catalog/entity-types/:id', () => {
+    it('deletes entity type and cascades', async () => {
+      await request(app.getHttpServer())
+        .delete('/catalog/entity-types/et-1')
+        .expect(204);
+      const remaining = await prisma.entityType.findUnique({ where: { id: 'et-1' } });
+      expect(remaining).toBeNull();
+    });
+
+    it('returns 404 for non-existent id', async () => {
+      await request(app.getHttpServer())
+        .delete('/catalog/entity-types/nonexistent')
+        .expect(404);
+    });
+  });
+
+  describe('POST /catalog/fact-types', () => {
+    it('creates with entityLinkHint', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/catalog/fact-types')
+        .send({ name: 'salary', description: 'Salary', prompt: 'Extract salaries.', entityLinkHint: 'often related to person' })
+        .expect(201);
+      expect(response.body.entityLinkHint).toBe('often related to person');
+    });
+
+    it('creates without entityLinkHint', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/catalog/fact-types')
+        .send({ name: 'gdp', description: 'GDP', prompt: 'Extract GDP.' })
+        .expect(201);
+      expect(response.body.entityLinkHint).toBeNull();
+    });
+  });
+
+  describe('DELETE /catalog/fact-types/:id', () => {
+    it('deletes fact type', async () => {
+      await request(app.getHttpServer())
+        .delete('/catalog/fact-types/ft-1')
+        .expect(204);
+      const remaining = await prisma.factType.findUnique({ where: { id: 'ft-1' } });
+      expect(remaining).toBeNull();
     });
   });
 });

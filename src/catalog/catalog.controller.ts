@@ -1,6 +1,6 @@
-import { Controller, Get, Put, Param, Body } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Param, Body, HttpCode } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
-import { UpdateCatalogTypeDto } from './catalog.dto';
+import { UpdateCatalogTypeDto, CreateEntityTypeDto, CreateFactTypeDto } from './catalog.dto';
 
 @Controller('catalog')
 export class CatalogController {
@@ -25,5 +25,27 @@ export class CatalogController {
     @Body() dto: UpdateCatalogTypeDto,
   ) {
     return this.catalogService.updateFactType(id, dto);
+  }
+
+  @Post('entity-types')
+  async createEntityType(@Body() dto: CreateEntityTypeDto) {
+    return this.catalogService.createEntityType(dto);
+  }
+
+  @Delete('entity-types/:id')
+  @HttpCode(204)
+  async deleteEntityType(@Param('id') id: string) {
+    await this.catalogService.deleteEntityType(id);
+  }
+
+  @Post('fact-types')
+  async createFactType(@Body() dto: CreateFactTypeDto) {
+    return this.catalogService.createFactType(dto);
+  }
+
+  @Delete('fact-types/:id')
+  @HttpCode(204)
+  async deleteFactType(@Param('id') id: string) {
+    await this.catalogService.deleteFactType(id);
   }
 }
